@@ -11,6 +11,7 @@
 | Session | Date | Duration | Total Cumulative |
 |---------|------|----------|-----------------|
 | 1 | 2026-04-12 | 32 min | 32 min |
+| 2 | 2026-04-12 | 36 min | 68 min |
 
 ---
 
@@ -59,5 +60,45 @@
 | Docker compose stack running locally | ✓ Complete |
 | Tenant schema and provisioning | ✓ Complete |
 | First API endpoint returning call record data | Deferred → Session 2 |
+
+---
+
+## Session 2
+
+**Date:** 2026-04-12  
+**Start:** 7:04 AM PDT  
+**End:** 7:40 AM PDT  
+**Duration:** 36 minutes
+
+### Accomplished
+
+- Oriented with `Original Application/CRMPro/crmPro_SharedClasses` — confirmed caller identity model (single record, no multi-contact join), confirmed address flags from production (`IsOutlyingUS`, `IsAKHI`)
+- Added `Original Application/` to `.gitignore` — reference code is local only, never committed
+- Built `AddressData` value object — full production field set including all address classification flags
+- Built `CallAddresses` value object — billing + shipping JSONB envelope
+- Built `CommitmentEvent` value object — lock registry entry, supervisor override fields
+- Built `CallRecord` entity — full schema per ARCHITECTURE.md §19
+  - All relational columns with correct types and lengths
+  - `handle_time_seconds` as PostgreSQL generated stored column
+  - Typed JSONB: `addresses`, `commitment_events`
+  - Opaque JSONB strings for engine-owned fields: `flow_execution_state`, `api_response_cache`, `telephony_events`
+  - PCI sensitive data lifecycle fields (`sensitive_data`, `stored_at`, `wiped_at`, `wipe_reason`)
+  - `AddInteraction()`, `SetCallerIdentity()`, `Complete()`, `DeriveOverallStatus()`, etc.
+- Built `CallInteraction` entity — full schema per ARCHITECTURE.md §22 with `InteractionType` and `InteractionStatus` constants
+- Built `TenantContext` scoped service — holds resolved `Tenant` for current request, feeds `TenantDbContextFactory`
+- Built `ICallRecordRepository` Application interface
+- Built `TenantDbContext` — no default schema, relies on `search_path` per connection
+- Built `TenantDbContextFactory` — builds context with `Search Path=tenant_{schema},public` per request
+- Built `ScopedTenantDbContextFactory` — resolves current tenant from `TenantContext` and creates context
+- Built `TenantDbContextDesignTimeFactory` — EF tooling support targeting `tenant_tms`
+- Built `CallRecordConfiguration` — all columns, 7 indexes per ARCHITECTURE.md §19, JSONB converters
+- Built `CallInteractionConfiguration` — full EF config with FK cascade
+- Built `CallRecordRepository`
+- Updated `TenantProvisioningService` — now runs `MigrateAsync` on new tenant schema at provision time
+- Updated `ServiceCollectionExtensions` — all new services registered
+- Updated `TenantResolutionMiddleware` — now also populates `TenantContext` service
+- Built `GET /api/v1/call-records/{id}` — tenant-scoped, returns full record with interactions
+- Created and applied EF migration `CreateCallRecordsTables` to `tenant_tms` schema
+- Verified `tenant_tms.call_records` and `tenant_tms.call_interactions` in PostgreSQL
 
 ---
