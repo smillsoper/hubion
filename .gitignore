@@ -1,0 +1,43 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+_ReSharper*/
+*.DotSettings.user
+
+## User secrets (never commit — stored in %APPDATA%\Microsoft\UserSecrets)
+**/secrets.json
+
+## Publish output
+publish/
+out/
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+!**/packages/repositories.config
+.nuget/
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## IDE
+.vscode/
+*.swp
+*.swo
+
+## Logs
+*.log
+logs/
+
+## Environment
+.env
+.env.*
+
+## Docker volumes (local data — not source)
+postgres_data/

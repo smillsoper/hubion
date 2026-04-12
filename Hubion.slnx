@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Hubion.Api/Hubion.Api.csproj" />
+  <Project Path="Hubion.Application/Hubion.Application.csproj" />
+  <Project Path="Hubion.Domain/Hubion.Domain.csproj" />
+  <Project Path="Hubion.Infrastructure/Hubion.Infrastructure.csproj" />
+</Solution>

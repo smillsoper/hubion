@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: hubion_postgres
+    environment:
+      POSTGRES_USER: hubion
+      POSTGRES_PASSWORD: hubion_dev
+      POSTGRES_DB: hubion_master
+    ports:
+      - "5432:5432"
+    volumes:
+      - hubion_pgdata:/var/lib/postgresql/data
+
+volumes:
+  hubion_pgdata:
