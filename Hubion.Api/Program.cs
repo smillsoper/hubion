@@ -16,5 +16,6 @@ app.UseHttpsRedirection();
 app.UseTenantResolution();
 
 app.MapTenantsEndpoints();
+app.MapCallRecordsEndpoints();
 
 app.Run();

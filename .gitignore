@@ -41,3 +41,6 @@ logs/
 
 ## Docker volumes (local data — not source)
 postgres_data/
+
+## Original application reference code — local reference only, never committed
+Original Application/

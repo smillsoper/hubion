@@ -1,5 +1,5 @@
 using Hubion.Application.Interfaces.Repositories;
-using Hubion.Domain.Entities;
+using Hubion.Application.Services;
 
 namespace Hubion.Api.Middleware;
 
@@ -9,7 +9,7 @@ public class TenantResolutionMiddleware
 
     public TenantResolutionMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, ITenantRepository tenants)
+    public async Task InvokeAsync(HttpContext context, ITenantRepository tenants, TenantContext tenantContext)
     {
         // Nginx forwards the subdomain in X-Tenant-Subdomain.
         // Fall back to parsing the host header directly for local dev without nginx.
@@ -20,7 +20,10 @@ public class TenantResolutionMiddleware
         {
             var tenant = await tenants.GetBySubdomainAsync(subdomain);
             if (tenant is not null)
+            {
                 context.Items["Tenant"] = tenant;
+                tenantContext.Current = tenant;  // Feeds TenantDbContextFactory
+            }
         }
 
         await _next(context);

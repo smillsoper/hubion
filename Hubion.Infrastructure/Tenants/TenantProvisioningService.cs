@@ -10,11 +10,16 @@ public class TenantProvisioningService : ITenantProvisioningService
 {
     private readonly ITenantRepository _tenants;
     private readonly HubionDbContext _db;
+    private readonly ITenantDbContextFactory _tenantDbContextFactory;
 
-    public TenantProvisioningService(ITenantRepository tenants, HubionDbContext db)
+    public TenantProvisioningService(
+        ITenantRepository tenants,
+        HubionDbContext db,
+        ITenantDbContextFactory tenantDbContextFactory)
     {
         _tenants = tenants;
         _db = db;
+        _tenantDbContextFactory = tenantDbContextFactory;
     }
 
     public async Task<Tenant> ProvisionAsync(
@@ -31,16 +36,18 @@ public class TenantProvisioningService : ITenantProvisioningService
 
         await _tenants.AddAsync(tenant, ct);
 
-        // Create the tenant's dedicated PostgreSQL schema before committing,
-        // so both succeed or both are rolled back together.
+        // 1. Create the PostgreSQL schema
         // SchemaName is system-generated ("tenant_" + normalized subdomain) — not user input.
-        // PostgreSQL does not support parameterized identifiers, so we build the DDL directly
-        // after validating subdomain format upstream.
         var schemaDdl = $"CREATE SCHEMA IF NOT EXISTS \"{tenant.SchemaName}\"";
 #pragma warning disable EF1002
         await _db.Database.ExecuteSqlRawAsync(schemaDdl, ct);
 #pragma warning restore EF1002
 
+        // 2. Apply all tenant-scoped EF migrations to the new schema
+        await using var tenantCtx = _tenantDbContextFactory.Create(tenant.SchemaName);
+        await tenantCtx.Database.MigrateAsync(ct);
+
+        // 3. Save the tenant record — all three steps succeed or the transaction rolls back
         await _tenants.SaveChangesAsync(ct);
 
         return tenant;
