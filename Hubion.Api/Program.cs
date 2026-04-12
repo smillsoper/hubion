@@ -1,19 +1,20 @@
-using Hubion.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using Hubion.Api.Endpoints;
+using Hubion.Api.Middleware;
+using Hubion.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddDbContext<HubionDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
 app.UseHttpsRedirection();
+app.UseTenantResolution();
+
+app.MapTenantsEndpoints();
 
 app.Run();
