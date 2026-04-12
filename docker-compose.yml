@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: postgres:16
     container_name: hubion_postgres
@@ -10,6 +11,75 @@ services:
       - "5432:5432"
     volumes:
       - hubion_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hubion -d hubion_master"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hubion_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - hubion_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # freeswitch:
+  #   Enabled when telephony session begins.
+  #   Requires SignalWire registry login: docker login freeswitch.signalwire.com
+  #   image: signalwire/freeswitch:latest
+  #   container_name: hubion_freeswitch
+  #   ports:
+  #     - "5060:5060/udp"          # SIP
+  #     - "5060:5060/tcp"          # SIP TCP
+  #     - "8021:8021/tcp"          # ESL (Event Socket Layer)
+  #     - "16384-16394:16384-16394/udp"  # RTP media
+  #   volumes:
+  #     - ./freeswitch/conf:/etc/freeswitch
+  #     - ./freeswitch/sounds:/usr/share/freeswitch/sounds/hubion
+  #   environment:
+  #     - FREESWITCH_DOMAIN=127.0.0.1
+
+  nginx:
+    image: nginx:alpine
+    container_name: hubion_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: hubion_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@hubion.dev
+      PGADMIN_DEFAULT_PASSWORD: hubion_dev
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - hubion_pgadmin:/var/lib/pgadmin
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: hubion_mailhog
+    ports:
+      - "1025:1025"    # SMTP — configure outbound email to localhost:1025
+      - "8025:8025"    # Web UI — http://localhost:8025
 
 volumes:
   hubion_pgdata:
+  hubion_redisdata:
+  hubion_pgadmin:
