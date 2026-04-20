@@ -7,21 +7,23 @@ namespace Hubion.Infrastructure.Repositories;
 
 public class CallRecordRepository : ICallRecordRepository
 {
-    private readonly TenantDbContext _db;
+    private readonly ScopedTenantDbContextFactory _factory;
+    private TenantDbContext? _db;
+    private TenantDbContext Db => _db ??= _factory.Create();
 
-    public CallRecordRepository(TenantDbContext db) => _db = db;
+    public CallRecordRepository(ScopedTenantDbContextFactory factory) => _factory = factory;
 
     public Task<CallRecord?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        _db.CallRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
+        Db.CallRecords.FirstOrDefaultAsync(r => r.Id == id, ct);
 
     public Task<CallRecord?> GetByIdWithInteractionsAsync(Guid id, CancellationToken ct = default) =>
-        _db.CallRecords
+        Db.CallRecords
             .Include(r => r.Interactions)
             .FirstOrDefaultAsync(r => r.Id == id, ct);
 
     public async Task AddAsync(CallRecord record, CancellationToken ct = default) =>
-        await _db.CallRecords.AddAsync(record, ct);
+        await Db.CallRecords.AddAsync(record, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default) =>
-        _db.SaveChangesAsync(ct);
+        Db.SaveChangesAsync(ct);
 }

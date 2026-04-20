@@ -8,7 +8,7 @@ public static class CallRecordsEndpoints
 {
     public static IEndpointRouteBuilder MapCallRecordsEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/call-records");
+        var group = app.MapGroup("/api/v1/call-records").RequireAuthorization();
 
         group.MapGet("{id:guid}", GetById);
 

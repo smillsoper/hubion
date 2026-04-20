@@ -14,13 +14,19 @@ public class TenantDbContext : DbContext
 {
     public TenantDbContext(DbContextOptions<TenantDbContext> options) : base(options) { }
 
+    public DbSet<Agent> Agents => Set<Agent>();
     public DbSet<CallRecord> CallRecords => Set<CallRecord>();
     public DbSet<CallInteraction> CallInteractions => Set<CallInteraction>();
+    public DbSet<Flow> Flows => Set<Flow>();
+    public DbSet<FlowSession> FlowSessions => Set<FlowSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfiguration(new AgentConfiguration());
         modelBuilder.ApplyConfiguration(new CallRecordConfiguration());
         modelBuilder.ApplyConfiguration(new CallInteractionConfiguration());
+        modelBuilder.ApplyConfiguration(new FlowConfiguration());
+        modelBuilder.ApplyConfiguration(new FlowSessionConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 

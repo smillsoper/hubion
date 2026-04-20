@@ -8,7 +8,7 @@ public static class TenantsEndpoints
 {
     public static IEndpointRouteBuilder MapTenantsEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/tenants");
+        var group = app.MapGroup("/api/v1/tenants").RequireAuthorization();
 
         group.MapGet("{id:guid}", GetById);
         group.MapPost("", Provision);

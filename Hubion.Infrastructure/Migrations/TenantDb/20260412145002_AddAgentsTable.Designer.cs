@@ -3,6 +3,7 @@ using System;
 using Hubion.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hubion.Infrastructure.Migrations.TenantDb
 {
     [DbContext(typeof(TenantDbContext))]
-    partial class TenantDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412145002_AddAgentsTable")]
+    partial class AddAgentsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -367,153 +370,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                         .HasDatabaseName("idx_call_records_caller");
 
                     b.ToTable("call_records", (string)null);
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.Flow", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("CampaignId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("campaign_id");
-
-                    b.Property<Guid?>("ClientId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("client_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedByAgentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by_agent_id");
-
-                    b.Property<string>("Definition")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("definition");
-
-                    b.Property<string>("FlowType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("flow_type");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "IsActive")
-                        .HasDatabaseName("idx_flows_tenant_active");
-
-                    b.HasIndex("TenantId", "ClientId", "CampaignId")
-                        .HasDatabaseName("idx_flows_tenant_client_campaign");
-
-                    b.ToTable("flows", (string)null);
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.FlowSession", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AgentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("agent_id");
-
-                    b.Property<Guid>("CallRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("call_record_id");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("completed_at");
-
-                    b.Property<string>("CurrentNodeId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("current_node_id");
-
-                    b.Property<string>("ExecutionHistory")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("execution_history");
-
-                    b.Property<Guid>("FlowId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("flow_id");
-
-                    b.Property<int>("FlowVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("flow_version");
-
-                    b.Property<Guid>("InteractionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("interaction_id");
-
-                    b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("started_at");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("VariableStore")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("variable_store");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CallRecordId")
-                        .HasDatabaseName("idx_flow_sessions_active_call")
-                        .HasFilter("status = 'active'");
-
-                    b.HasIndex("CallRecordId", "Status")
-                        .HasDatabaseName("idx_flow_sessions_call_record_status");
-
-                    b.HasIndex("TenantId", "AgentId", "StartedAt")
-                        .HasDatabaseName("idx_flow_sessions_agent_date");
-
-                    b.ToTable("flow_sessions", (string)null);
                 });
 
             modelBuilder.Entity("Hubion.Domain.Entities.CallInteraction", b =>
