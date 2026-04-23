@@ -3,6 +3,7 @@ using System;
 using Hubion.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Hubion.Infrastructure.Migrations.TenantDb
 {
     [DbContext(typeof(TenantDbContext))]
-    partial class TenantDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260422135721_AddSubscriptions")]
+    partial class AddSubscriptions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1106,148 +1109,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                     b.ToTable("products", (string)null);
                 });
 
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductAttribute", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("display_order");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("slug");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_product_attributes_tenant_id");
-
-                    b.HasIndex("TenantId", "Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_product_attributes_tenant_slug");
-
-                    b.ToTable("product_attributes", (string)null);
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductAttributeValue", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("AttributeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("attribute_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("display_order");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("value");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AttributeId")
-                        .HasDatabaseName("ix_product_attribute_values_attribute_id");
-
-                    b.ToTable("product_attribute_values", (string)null);
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("display_order");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<Guid?>("ParentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_id");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("slug");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentId")
-                        .HasDatabaseName("ix_product_categories_parent_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_product_categories_tenant_id");
-
-                    b.HasIndex("TenantId", "Slug")
-                        .IsUnique()
-                        .HasDatabaseName("ix_product_categories_tenant_slug");
-
-                    b.ToTable("product_categories", (string)null);
-                });
-
             modelBuilder.Entity("Hubion.Domain.Entities.ProductKit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1401,44 +1262,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                     b.ToTable("subscriptions", (string)null);
                 });
 
-            modelBuilder.Entity("product_attribute_assignments", b =>
-                {
-                    b.Property<Guid>("product_id")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("attribute_value_id")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("product_id", "attribute_value_id");
-
-                    b.HasIndex("attribute_value_id")
-                        .HasDatabaseName("ix_product_attribute_assignments_value_id");
-
-                    b.HasIndex("product_id")
-                        .HasDatabaseName("ix_product_attribute_assignments_product_id");
-
-                    b.ToTable("product_attribute_assignments", (string)null);
-                });
-
-            modelBuilder.Entity("product_category_map", b =>
-                {
-                    b.Property<Guid>("product_id")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("category_id")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("product_id", "category_id");
-
-                    b.HasIndex("category_id")
-                        .HasDatabaseName("ix_product_category_map_category_id");
-
-                    b.HasIndex("product_id")
-                        .HasDatabaseName("ix_product_category_map_product_id");
-
-                    b.ToTable("product_category_map", (string)null);
-                });
-
             modelBuilder.Entity("Hubion.Domain.Entities.CallInteraction", b =>
                 {
                     b.HasOne("Hubion.Domain.Entities.CallRecord", null)
@@ -1478,25 +1301,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductAttributeValue", b =>
-                {
-                    b.HasOne("Hubion.Domain.Entities.ProductAttribute", "Attribute")
-                        .WithMany("Values")
-                        .HasForeignKey("AttributeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Attribute");
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductCategory", b =>
-                {
-                    b.HasOne("Hubion.Domain.Entities.ProductCategory", null)
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-                });
-
             modelBuilder.Entity("Hubion.Domain.Entities.ProductKit", b =>
                 {
                     b.HasOne("Hubion.Domain.Entities.Product", "Child")
@@ -1515,36 +1319,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("product_attribute_assignments", b =>
-                {
-                    b.HasOne("Hubion.Domain.Entities.ProductAttributeValue", null)
-                        .WithMany()
-                        .HasForeignKey("attribute_value_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Hubion.Domain.Entities.Product", null)
-                        .WithMany()
-                        .HasForeignKey("product_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("product_category_map", b =>
-                {
-                    b.HasOne("Hubion.Domain.Entities.ProductCategory", null)
-                        .WithMany()
-                        .HasForeignKey("category_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Hubion.Domain.Entities.Product", null)
-                        .WithMany()
-                        .HasForeignKey("product_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Hubion.Domain.Entities.CallRecord", b =>
                 {
                     b.Navigation("Interactions");
@@ -1560,16 +1334,6 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                     b.Navigation("Kits");
 
                     b.Navigation("Offers");
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductAttribute", b =>
-                {
-                    b.Navigation("Values");
-                });
-
-            modelBuilder.Entity("Hubion.Domain.Entities.ProductCategory", b =>
-                {
-                    b.Navigation("Children");
                 });
 #pragma warning restore 612, 618
         }

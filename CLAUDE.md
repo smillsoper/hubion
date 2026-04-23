@@ -2,13 +2,13 @@
 
 **Read ARCHITECTURE.md.** It is the authoritative reference for all development decisions. Every session should start by reading it.
 
-DevLog.md needs to be updated every session with the session start date and time, session end date and time, session duration, total duration, and what was done for the session.  sessions 1 and 2 were logged without timestamps. These are REQUIRED GOING FORWARD. Ask for the current date and time for logging if needed.
+DevLog.md needs to be updated every session with the session start date and time, session end date and time, session duration, total duration, and what was done for the session.  sessions 1 and 2 were logged without timestamps. These are REQUIRED GOING FORWARD. Ask for the current date and time for logging. Don't assume times or durations. always ask for timestamps and calculate durations.
 
 ---
 
 ## Current Project Status
 
-**As of:** 2026-04-20 (Session 6 complete)
+**As of:** 2026-04-23 (Session 14 complete)
 
 ### Solution Structure
 
@@ -17,7 +17,8 @@ Hubion.slnx
 ├── Hubion.Domain          ← Core domain models, value objects, enums. No dependencies.
 ├── Hubion.Application     ← Business logic, use cases, interfaces. Depends on Domain only.
 ├── Hubion.Infrastructure  ← EF Core + Npgsql, repositories, services. Depends on Application + Domain.
-└── Hubion.Api             ← ASP.NET Core Web API. Depends on Application + Infrastructure.
+├── Hubion.Api             ← ASP.NET Core Web API. Depends on Application + Infrastructure.
+└── Hubion.Worker          ← .NET Worker Service. BackgroundService jobs. Depends on Application + Infrastructure.
 ```
 
 Clean Architecture dependency chain: `Domain ← Application ← Infrastructure ← Api`
@@ -80,6 +81,102 @@ Build status: **0 warnings, 0 errors.**
 - `PasswordHasher` — BCrypt enhanced hashing, work factor 12 (singleton)
 - `JwtTokenService` — HS256, 480-min expiry, full tenant+agent claims
 - `ServiceCollectionExtensions.AddInfrastructure()`
+
+**Commerce Engine (Session 7)**
+- `Product` entity — all scalar fields relational; complex structures (pricing tiers, personalization, ship methods, flags) as JSONB; `ProductInventoryStatus` enum; `CanAddToCart()` guard; variant self-reference via `ParentProductId`
+- `ProductKit` entity — fixed (`CreateFixed`) and variable (`CreateVariable`) kit components
+- Commerce value objects: `PaymentInstallment`, `QuantityPriceBreak`, `ProductShipMethod`, `PersonalizationPrompt`, `ProductFlag`, `AutoShipInterval`, `TierRange`, `CartDocument`, `CartItem`, `CartPaymentBreakdown`
+- `CallRecord.Cart` — JSONB column on `call_records` (typed `CartDocument`); `SetCart()` method
+- `IProductRepository`, `IPricingService` Application interfaces
+- `PricingService` — MixMatch → QPB → base fallback; weight/subtotal shipping tier resolution; installment splitting with rounding correction in payment 1
+- `ProductRepository` — lazy factory pattern; `ILike` search on description
+- `products` + `product_kits` tables in tenant schema; `cart` column on `call_records`
+- API: `POST/GET /api/v1/products`, `GET /api/v1/products/{id}`, `GET /api/v1/products/sku/{sku}`, `GET/PUT /api/v1/call-records/{id}/cart`
+- Migration `AddProductsAndCart` applied to `tenant_tms` ✓
+
+**Test Projects (Session 14)**
+- `tests/Hubion.Domain.Tests/` — 45 passing xUnit tests across 4 test classes:
+  - `ProductInventoryTests` — `CanAddToCart`, `Reserve`, `Release`, `Confirm` for all InventoryStatus values and DecrementOnOrder states
+  - `OrderLineLifecycleTests` — `FromCartItem` snapshot, `Ship`, `MarkDelivered`, `Cancel`, `CreateFromSubscription`
+  - `OrderLifecycleTests` — `Cancel`; `RefreshStatus` all transitions; `CreateFromSubscription` null CallRecordId guard
+  - `SubscriptionLifecycleTests` — `IsDue` (incl. past-date via backing field reflection), `RecordShipment`, `Pause/Resume/Cancel`
+- `tests/Hubion.Application.Tests/` — 20 passing xUnit tests across 2 test classes:
+  - `PricingServiceResolvePaymentsTests` — base fallback, QPB threshold/miss/best-break, MixMatch threshold/miss/priority/exclusion
+  - `PricingServiceCalculateTotalsTests` — empty cart, subtotal/shipping/tax, shipping-exempt, weight-tier/subtotal-tier/precedence, multi-payment breakdowns, split/no-split shipping, RoundSplit remainder
+- `PricingService` constructed with real `FlatRateTaxProvider` + `TaxProviderFactory` (pure computation, no mocking needed)
+- Both projects added to `Hubion.slnx`; `dotnet test` runs all 65 tests in ~600ms
+
+**Commerce Engine — Category/attribute system (Session 13)**
+- `ProductCategory` entity — hierarchical tree via self-referential `ParentId`; `Name`, `Slug`, `DisplayOrder`, `IsActive`; `Children` navigation; `Create()`, `Rename()`, `Activate()`, `Deactivate()`
+- `ProductAttribute` entity — attribute definitions per tenant; `Name`, `Slug`, `DisplayOrder`, `IsActive`; `Values` navigation; `AddValue()` returns new value
+- `ProductAttributeValue` entity — discrete values for an attribute (e.g. "Red" for "Color"); `AttributeId` FK; public `Create()` factory
+- `Product` updated — `Categories` and `AttributeValues` many-to-many navigations; `AssignToCategory()`, `RemoveFromCategory()`, `SetAttributeValue()` (one-per-attribute), `RemoveAttributeValue()` domain methods
+- `IProductCategoryRepository` — `GetRootsAsync`, `GetChildrenAsync`, `GetByIdAsync`, `AddAsync`
+- `IProductAttributeRepository` — `GetByIdAsync`, `GetValueByIdAsync`, `GetAllAsync`, `AddAsync`, `AddValueAsync`, `SaveChangesAsync`
+- `IProductRepository.SearchAsync` — extended with `categoryId` + `attributeValueIds` (AND-faceted) parameters
+- `ProductCategoryConfiguration` — `product_categories` table; self-referential FK; tenant+slug unique index
+- `ProductAttributeConfiguration` — `product_attributes` table; `HasMany(Values).WithOne()` cascade
+- `ProductAttributeValueConfiguration` — `product_attribute_values` table
+- `ProductConfiguration` — two `UsingEntity` many-to-many blocks: `product_category_map` + `product_attribute_assignments`
+- `ProductCategoryRepository`, `ProductAttributeRepository` — lazy factory pattern
+- `ProductRepository.SearchAsync` — `Include(Categories)`, `Include(AttributeValues)`, `Where(p.Categories.Any(...))`, per-facet AND filter
+- API: `POST /categories`, `GET /categories?parentId=x`, `GET /categories/{id}`
+- API: `POST /attributes`, `GET /attributes`, `GET /attributes/{id}`, `POST /attributes/{id}/values`
+- API: `POST /products/{id}/categories/{categoryId}`, `DELETE /products/{id}/categories/{categoryId}`
+- API: `POST /products/{id}/attribute-values/{valueId}`, `DELETE /products/{id}/attribute-values/{valueId}`
+- `GET /products` updated — `categoryId` + `attributeValueIds` query params; product response embeds `categories[]` + `attributeValues[]`
+- Migration `AddCategoriesAndAttributes` applied to `tenant_tms` ✓
+- Bug fix: `ProductAttributeValue` values added via `DbSet.AddAsync` directly (not through collection tracking) to avoid `DbUpdateConcurrencyException` in EF Core 10
+
+**Commerce Engine — Subscription lifecycle + Hubion.Worker (Session 12)**
+- `Order.CallRecordId` nullable; `Order.CreateFromSubscription` + `OrderLine.CreateFromSubscription` factories
+- `Subscription` entity — AutoShip enrollment snapshot; `IsDue()`, `RecordShipment()`, `Pause()`, `Resume()`, `Cancel()`; `SubscriptionStatus` static class
+- `ISubscriptionRepository`, `ISubscriptionOrderCreator` (Application); `SubscriptionRepository`, `SubscriptionOrderCreator`, `SubscriptionConfiguration` (Infrastructure)
+- `OrderService` auto-creates subscriptions on order commit for any `AutoShip=true && IntervalDays>0` lines
+- API: `GET /call-records/{id}/subscriptions`, `GET /subscriptions/{id}`, `POST .../pause`, `.../resume`, `.../cancel`
+- `Hubion.Worker` project — `Microsoft.NET.Sdk.Worker`; `SubscriptionProcessingService : BackgroundService`; hourly cadence; per-tenant scoped processing via `TenantContext.Current` injection; per-subscription error isolation
+- Migration `AddSubscriptions` applied ✓
+
+**Commerce Engine — Order entity (Session 11)**
+- `Order` entity — `CreateFromCart(id, tenantId, callRecordId, cart, lines)`; `Status` lifecycle (`confirmed` → `partially_shipped` / `shipped` / `delivered` / `cancelled`); `PaymentBreakdowns` JSONB snapshot; `Cancel()`, `RefreshStatus()` (derives order status from lines, stamps `ShippedAt`/`DeliveredAt`)
+- `OrderLine` entity — full `CartItem` snapshot at commit time; `FulfillmentStatus` lifecycle; `Ship(trackingNumber)`, `MarkDelivered()`, `Cancel()`; `FromCartItem()` factory
+- `IOrderRepository`, `IOrderService` — `CreateFromCartAsync` idempotent; confirms inventory (`IInventoryService.ConfirmCartAsync`) on first commit
+- `OrderRepository`, `OrderService`, `OrderConfiguration`, `OrderLineConfiguration`
+- `TenantDbContext`: `Orders` + `OrderLines` DbSets; migration `AddOrders` applied ✓
+- API: `POST /call-records/{id}/order` (201 create / 200 idempotent), `GET /call-records/{id}/order`, `GET /orders/{id}`, `POST /orders/{id}/cancel`, `POST /orders/{id}/lines/{lineId}/ship`, `.../deliver`, `.../cancel`
+
+**Commerce Engine — Inventory reservation (Session 10)**
+- `Product.QtyReserved` — units held in active carts; does not decrement `QtyAvailable` until confirmed
+- `Product.Reserve(qty)` — soft hold; returns false (no-op) if `CanAddToCart` fails; only tracks if `DecrementOnOrder = true`
+- `Product.Release(qty)` — releases soft hold (floor 0); called on cart replace/clear
+- `Product.Confirm(qty)` — converts soft hold to real decrement; decrements both `QtyAvailable` and `QtyReserved` (floor 0)
+- `Product.CanAddToCart(qty)` — `NoBackorder` case now uses `QtyAvailable - QtyReserved - qty >= MinimumQty`
+- `IInventoryService` (Application) — `ReserveCartAsync` (all-or-nothing, returns failing SKUs), `ReleaseCartAsync`, `ConfirmCartAsync`
+- `InventoryService` (Infrastructure) — lazy factory pattern; single-query load of all referenced products; all-or-nothing validate-then-apply
+- `ProductConfiguration` — `qty_reserved integer` mapped
+- `SetCart` endpoint — releases old reservations, reserves new cart, restores old on failure (409 with `unavailableSkus`), only saves after reserve confirmed
+- Migration `AddInventoryReservation` applied to `tenant_tms` ✓
+
+**Commerce Engine — Tax service integration (Session 9)**
+- `ITaxProvider` (Application) — `ProviderKey` + `CalculateTaxAsync` → `TaxResult(Rate, TaxAmount, Jurisdictions?)`; `JurisdictionTax` for future multi-state breakdown
+- `ITaxProviderFactory` (Application) — `Resolve(providerKey?)` falls back to default (empty-key) provider
+- `FlatRateTaxProvider` (Infrastructure) — default provider (`ProviderKey = ""`); applies `CartDocument.TaxRate` to taxable subtotal; no I/O
+- `TaxProviderFactory` (Infrastructure) — dispatch dictionary built from all registered `ITaxProvider` instances at startup
+- `PricingService` — now takes `ITaxProviderFactory`; `CalculateTotalsAsync` (renamed from sync) delegates tax to resolved provider
+- `CartDocument.TaxProvider` field — `null`/`""` = flat rate; future values: `"avalara"`, `"taxjar"`
+- Bug fix: payment installment breakdown now correctly assigns full shipping/tax to payment 1 when split=false (previously divided by N)
+- `JsonStringEnumConverter` registered globally via `ConfigureHttpJsonOptions` — all enums serialize as strings API-wide
+- DI: `FlatRateTaxProvider` → singleton `ITaxProvider`; `TaxProviderFactory` → singleton `ITaxProviderFactory`
+
+**Commerce Engine — Offer separation (Session 8)**
+- `Offer` entity — sales configuration layer; `ProductId` FK, `Name`, `FullPrice`, `Shipping`, `TaxExempt`, `ShippingExempt`, `AllowPriceOverride`, `MixMatchCode`, upsell fields, AutoShip fields, ship-to/delivery options, `IsActive`, `ValidFrom`/`ValidTo` (campaign window), 7 JSONB pricing columns, `IsAvailable()` guard
+- `Product` refactored — now physical item only: Sku, Description, Weight, inventory fields, geographic surcharges, AliasSKUs, Keywords; `Offers` navigation collection
+- `CartItem` updated — `OfferId` added; `ProductId` + `Sku` explicitly documented as order-time snapshots
+- `IOfferRepository`, `OfferRepository`, `OfferConfiguration` — lazy factory pattern, 3 indexes
+- `IPricingService.ResolvePayments` — signature changed to take `Offer` (not `Product`)
+- `OffersEndpoints` — POST (create), GET (active list), GET/{id}, POST/{id}/activate, POST/{id}/deactivate, GET/product/{productId}
+- `ProductsEndpoints` — CreateProductRequest stripped to physical fields only; product response embeds Offers
+- Migration `SeparateProductFromOffer` applied — 24 pricing columns dropped from products, offers table created ✓
 
 **Flow Engine (Session 5)**
 - `Flow` entity + `FlowSession` entity — full lifecycle methods
@@ -149,15 +246,25 @@ Build status: **0 warnings, 0 errors.**
 
 ---
 
-### What Is NOT Done Yet (Session 7+)
+### What Is NOT Done Yet — Commerce Engine Gap Roadmap (Sessions 8–13)
 
-- **`Hubion.Worker`** — background service project not yet created
+These gaps were identified in Session 7 analysis. Each session tackles one gap end-to-end with verification before moving to the next.
+
+| Session | Gap | Key work |
+|---|---|---|
+| **8** | Product/Offer separation | ✓ Complete — Session 8 |
+| **9** | Tax service integration | ✓ Complete — Session 9 |
+| **10** | Inventory reservation | ✓ Complete — Session 10 |
+| **11** | Order entity | ✓ Complete — Session 11 |
+| **12** | Subscription lifecycle | ✓ Complete — Session 12 |
+| **13** | Category/attribute system | ✓ Complete — Session 13 |
+
+### What Is NOT Done Yet — Other
+
 - **`Hubion.HubService`** — SignalR hub project not yet created
 - **`Hubion.Integrations`** — adapter framework project not yet created
 - **`Hubion.Web`** — React frontend not yet scaffolded
-- **Test projects** — none created yet
-- **Flow engine** — JSON flow execution engine (ARCHITECTURE.md §9)
-- **Variable resolution engine** — `{{namespace.field}}` template service (ARCHITECTURE.md §11)
+- **Test projects** — `Hubion.Domain.Tests` ✓ (45 tests), `Hubion.Application.Tests` ✓ (20 tests); `Hubion.Infrastructure.Tests` and `Hubion.Api.Tests` not yet created
 
 ---
 

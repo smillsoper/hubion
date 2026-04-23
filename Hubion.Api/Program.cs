@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Hubion.Api.Endpoints;
 using Hubion.Api.Hubs;
 using Hubion.Api.Middleware;
@@ -11,6 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Serialize enums as strings globally — makes API requests/responses human-readable
+// (e.g. "Available" instead of 0 for ProductInventoryStatus)
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // SignalR — must be registered before IFlowNotifier which depends on IHubContext
 builder.Services.AddSignalR();
@@ -68,6 +74,12 @@ app.MapAuthEndpoints();
 app.MapAgentsEndpoints();
 app.MapTenantsEndpoints();
 app.MapCallRecordsEndpoints();
+app.MapProductsEndpoints();
+app.MapCategoriesEndpoints();
+app.MapAttributesEndpoints();
+app.MapOffersEndpoints();
+app.MapOrdersEndpoints();
+app.MapSubscriptionsEndpoints();
 app.MapFlowsEndpoints();
 app.MapFlowSessionsEndpoints();
 

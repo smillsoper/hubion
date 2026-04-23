@@ -1,4 +1,5 @@
 using Hubion.Domain.ValueObjects;
+using Hubion.Domain.ValueObjects.Commerce;
 
 namespace Hubion.Domain.Entities;
 
@@ -50,6 +51,7 @@ public class CallRecord
     // JSONB — variable/nested, not frequently queried by field
     public CallAddresses? Addresses { get; private set; }
     public List<CommitmentEvent> CommitmentEvents { get; private set; } = [];
+    public CartDocument? Cart { get; private set; }             // JSONB — commerce engine owns this
     public string? FlowExecutionState { get; private set; }   // JSONB — flow engine owns this
     public string? CustomFields { get; private set; }         // JSONB — denormalized snapshot
     public string? ApiResponseCache { get; private set; }     // JSONB — adapter framework owns this
@@ -153,6 +155,12 @@ public class CallRecord
     public void AddCommitmentEvent(CommitmentEvent evt)
     {
         CommitmentEvents.Add(evt);
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
+    public void SetCart(CartDocument cart)
+    {
+        Cart      = cart;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 

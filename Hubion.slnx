@@ -3,4 +3,7 @@
   <Project Path="Hubion.Application/Hubion.Application.csproj" />
   <Project Path="Hubion.Domain/Hubion.Domain.csproj" />
   <Project Path="Hubion.Infrastructure/Hubion.Infrastructure.csproj" />
+  <Project Path="Hubion.Worker/Hubion.Worker.csproj" />
+  <Project Path="tests/Hubion.Domain.Tests/Hubion.Domain.Tests.csproj" />
+  <Project Path="tests/Hubion.Application.Tests/Hubion.Application.Tests.csproj" />
 </Solution>

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Hubion.Domain.Entities;
 using Hubion.Domain.ValueObjects;
+using Hubion.Domain.ValueObjects.Commerce;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -75,6 +76,13 @@ public class CallRecordConfiguration : IEntityTypeConfiguration<CallRecord>
                 v => JsonSerializer.Serialize(v, JsonOptions),
                 v => JsonSerializer.Deserialize<List<CommitmentEvent>>(v, JsonOptions) ?? new())
             .HasDefaultValueSql("'[]'::jsonb");
+
+        builder.Property(r => r.Cart)
+            .HasColumnName("cart")
+            .HasColumnType("jsonb")
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, JsonOptions),
+                v => JsonSerializer.Deserialize<CartDocument>(v, JsonOptions));
 
         // JSONB — opaque strings (owned by future engine components)
         builder.Property(r => r.FlowExecutionState)

@@ -19,6 +19,15 @@ public class TenantDbContext : DbContext
     public DbSet<CallInteraction> CallInteractions => Set<CallInteraction>();
     public DbSet<Flow> Flows => Set<Flow>();
     public DbSet<FlowSession> FlowSessions => Set<FlowSession>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductKit> ProductKits => Set<ProductKit>();
+    public DbSet<Offer> Offers => Set<Offer>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+    public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
+    public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +36,15 @@ public class TenantDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CallInteractionConfiguration());
         modelBuilder.ApplyConfiguration(new FlowConfiguration());
         modelBuilder.ApplyConfiguration(new FlowSessionConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductKitConfiguration());
+        modelBuilder.ApplyConfiguration(new OfferConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderLineConfiguration());
+        modelBuilder.ApplyConfiguration(new SubscriptionConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductAttributeConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductAttributeValueConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 

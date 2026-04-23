@@ -2,6 +2,7 @@ using Hubion.Application.Interfaces.Repositories;
 using Hubion.Application.Interfaces.Services;
 using Hubion.Application.Services;
 using Hubion.Infrastructure.Auth;
+using Hubion.Infrastructure.Commerce;
 using Hubion.Infrastructure.Data;
 using Hubion.Infrastructure.FlowEngine;
 using Hubion.Infrastructure.FlowEngine.NodeHandlers;
@@ -40,11 +41,27 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentRepository, AgentRepository>();
         services.AddScoped<IFlowRepository, FlowRepository>();
         services.AddScoped<IFlowSessionRepository, FlowSessionRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
+        services.AddScoped<IProductAttributeRepository, ProductAttributeRepository>();
+        services.AddScoped<IOfferRepository, OfferRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 
         // Services
         services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IPricingService, PricingService>();
+        services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<ISubscriptionOrderCreator, SubscriptionOrderCreator>();
+
+        // Tax providers — each ITaxProvider is enumerated by TaxProviderFactory to build its dispatch table.
+        // Register FlatRateTaxProvider first (it is the default/fallback).
+        // Future: services.AddSingleton<ITaxProvider, AvalaraTaxProvider>();
+        services.AddSingleton<ITaxProvider, FlatRateTaxProvider>();
+        services.AddSingleton<ITaxProviderFactory, TaxProviderFactory>();
 
         // Variable resolver (singleton — stateless, thread-safe regex engine)
         services.AddSingleton<IVariableResolver, VariableResolver>();
