@@ -373,6 +373,137 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                     b.ToTable("call_records", (string)null);
                 });
 
+            modelBuilder.Entity("Hubion.Domain.Entities.CustomFieldDefinition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CampaignId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("campaign_id");
+
+                    b.Property<Guid?>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<string>("DataTypeName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("data_type_name");
+
+                    b.Property<string>("DisplayLabel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_label");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("FieldName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("field_name");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_required");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("ValidationRules")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("validation_rules");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_cfd_tenant_id");
+
+                    b.HasIndex("TenantId", "ClientId", "CampaignId")
+                        .HasDatabaseName("ix_cfd_scope");
+
+                    b.HasIndex("TenantId", "FieldName", "ClientId", "CampaignId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cfd_tenant_field_scope_unique");
+
+                    b.ToTable("custom_field_definitions", (string)null);
+                });
+
+            modelBuilder.Entity("Hubion.Domain.Entities.CustomFieldValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CallRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("call_record_id");
+
+                    b.Property<Guid>("DefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("definition_id");
+
+                    b.Property<DateTimeOffset>("StoredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("stored_at");
+
+                    b.Property<bool?>("ValueBoolean")
+                        .HasColumnType("boolean")
+                        .HasColumnName("value_boolean");
+
+                    b.Property<DateOnly?>("ValueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("value_date");
+
+                    b.Property<DateTimeOffset?>("ValueDatetime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("value_datetime");
+
+                    b.Property<decimal?>("ValueDecimal")
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("value_decimal");
+
+                    b.Property<long?>("ValueInteger")
+                        .HasColumnType("bigint")
+                        .HasColumnName("value_integer");
+
+                    b.Property<string>("ValueJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("value_json");
+
+                    b.Property<string>("ValueString")
+                        .HasColumnType("text")
+                        .HasColumnName("value_string");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CallRecordId")
+                        .HasDatabaseName("ix_cfv_call_record_id");
+
+                    b.HasIndex("DefinitionId");
+
+                    b.HasIndex("CallRecordId", "DefinitionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cfv_call_record_definition_unique");
+
+                    b.ToTable("custom_field_values", (string)null);
+                });
+
             modelBuilder.Entity("Hubion.Domain.Entities.Flow", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1448,6 +1579,17 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Hubion.Domain.Entities.CustomFieldValue", b =>
+                {
+                    b.HasOne("Hubion.Domain.Entities.CustomFieldDefinition", "Definition")
+                        .WithMany()
+                        .HasForeignKey("DefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Definition");
+                });
+
             modelBuilder.Entity("Hubion.Domain.Entities.Offer", b =>
                 {
                     b.HasOne("Hubion.Domain.Entities.Product", "Product")
@@ -1480,13 +1622,11 @@ namespace Hubion.Infrastructure.Migrations.TenantDb
 
             modelBuilder.Entity("Hubion.Domain.Entities.ProductAttributeValue", b =>
                 {
-                    b.HasOne("Hubion.Domain.Entities.ProductAttribute", "Attribute")
+                    b.HasOne("Hubion.Domain.Entities.ProductAttribute", null)
                         .WithMany("Values")
                         .HasForeignKey("AttributeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Attribute");
                 });
 
             modelBuilder.Entity("Hubion.Domain.Entities.ProductCategory", b =>

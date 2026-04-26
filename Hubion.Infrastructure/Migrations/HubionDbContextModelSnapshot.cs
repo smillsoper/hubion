@@ -23,6 +23,134 @@ namespace Hubion.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Hubion.Domain.Entities.DataType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AggregationFunctions")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("aggregation_functions")
+                        .HasDefaultValueSql("'[]'::jsonb");
+
+                    b.Property<string>("ClrType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("clr_type");
+
+                    b.Property<string>("DisplayFormat")
+                        .HasColumnType("text")
+                        .HasColumnName("display_format");
+
+                    b.Property<bool>("IsAggregatable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_aggregatable");
+
+                    b.Property<string>("PostgresType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("postgres_type");
+
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("type_name");
+
+                    b.Property<string>("ValidationPattern")
+                        .HasColumnType("text")
+                        .HasColumnName("validation_pattern");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TypeName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_data_types_type_name");
+
+                    b.ToTable("data_types", "public");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            AggregationFunctions = "[]",
+                            ClrType = "System.String",
+                            IsAggregatable = false,
+                            PostgresType = "text",
+                            TypeName = "string"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            AggregationFunctions = "[\"sum\",\"min\",\"max\",\"avg\",\"count\"]",
+                            ClrType = "System.Int64",
+                            IsAggregatable = true,
+                            PostgresType = "bigint",
+                            TypeName = "integer"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            AggregationFunctions = "[\"sum\",\"min\",\"max\",\"avg\",\"count\"]",
+                            ClrType = "System.Decimal",
+                            IsAggregatable = true,
+                            PostgresType = "numeric(18,6)",
+                            TypeName = "decimal"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000004"),
+                            AggregationFunctions = "[\"sum\",\"min\",\"max\",\"avg\",\"count\"]",
+                            ClrType = "System.Decimal",
+                            DisplayFormat = "C2",
+                            IsAggregatable = true,
+                            PostgresType = "numeric(10,2)",
+                            TypeName = "currency"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000005"),
+                            AggregationFunctions = "[\"count\"]",
+                            ClrType = "System.Boolean",
+                            IsAggregatable = true,
+                            PostgresType = "boolean",
+                            TypeName = "boolean"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000006"),
+                            AggregationFunctions = "[]",
+                            ClrType = "System.DateOnly",
+                            IsAggregatable = false,
+                            PostgresType = "date",
+                            TypeName = "date"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000007"),
+                            AggregationFunctions = "[]",
+                            ClrType = "System.DateTimeOffset",
+                            IsAggregatable = false,
+                            PostgresType = "timestamptz",
+                            TypeName = "datetime"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000008"),
+                            AggregationFunctions = "[]",
+                            ClrType = "System.Text.Json.JsonElement",
+                            IsAggregatable = false,
+                            PostgresType = "jsonb",
+                            TypeName = "json"
+                        });
+                });
+
             modelBuilder.Entity("Hubion.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")

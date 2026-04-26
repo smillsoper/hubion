@@ -24,8 +24,10 @@
 | 12 | 2026-04-22 | 6:48 AM PDT | 7:14 AM PDT | 26 min | ~564 min |
 | 13 | 2026-04-23 | 7:26 AM PDT | 8:22 AM PDT | 56 min | ~620 min |
 | 14 | 2026-04-23 | 10:19 AM PDT | 10:36 AM PDT | 17 min | ~637 min |
-
-
+| 15 | 2026-04-24 | 6:51 AM PDT | 7:12 AM PDT | 21 min | ~658 min |
+| 16 | 2026-04-24 | 7:12 AM PDT | 7:58 AM PDT | 46 min | ~704 min |
+| 17 | 2026-04-26 | 6:45 AM PDT | 6:58 AM PDT | 13 min | ~717 min |
+| 18 | 2026-04-26 | 7:01 AM PDT | 7:59 AM PDT | 58 min | ~775 min |
 
 ---
 
@@ -852,3 +854,292 @@ Create `Hubion.Domain.Tests` and `Hubion.Application.Tests` — the first two te
 - `Order`/`OrderLine` tests work because `CreateFromCart` stores the passed-in `List<OrderLine>` by reference — calling `line.Ship()` on the original reference mutates the object in the order's `_lines` list, making `RefreshStatus` see the correct statuses
 
 ---
+
+## Session 15 — Custom Field System
+
+**Date:** 2026-04-24
+**Start:** 6:51 AM PDT
+**End:** 7:12 AM PDT
+**Duration:** 21 minutes
+**Cumulative Total:** ~658 min
+
+### Goal
+
+Build the custom field type system per ARCHITECTURE.md §20 — typed campaign/client/tenant-scoped fields stored on call records with a denormalized JSONB snapshot for fast display.
+
+### What Was Built
+
+**Domain**
+- `CustomFieldDataType` static class — 8 well-known type name constants (`string`, `integer`, `decimal`, `currency`, `boolean`, `date`, `datetime`, `json`) + `All` HashSet for validation
+- `DataType` entity — platform-level reference (public schema); maps type names to CLR/PostgreSQL types + aggregation metadata (`IsAggregatable`, `AggregationFunctions`); seeded with all 8 types
+- `CustomFieldDefinition` entity — scoped to tenant/client/campaign; `FieldName` (stable machine key), `DisplayLabel` (editable UI label), `DataTypeName` FK to data_types; `ScopeRank` computed property drives resolution (0=campaign, 1=client, 2=tenant); `Create()`, `UpdateLabel()`, `SetDisplayOrder()`, `SetRequired()`, `Activate()`, `Deactivate()`
+- `CustomFieldValue` entity — one row per (call_record, definition); 7 typed columns (one populated per row); `GetTypedValue()` returns the active column as `object?` for snapshot serialization; `ClearTypedColumns()` ensures only one column is ever set
+- `CallRecord.UpdateCustomFieldsSnapshot(string? json)` — new method; updates `custom_fields` JSONB column + stamps `UpdatedAt`
+
+**Application**
+- `IDataTypeRepository` — `GetAllAsync`, `GetByNameAsync`
+- `ICustomFieldDefinitionRepository` — `GetByIdAsync`, `GetForContextAsync` (scope-filtered), `GetAllForTenantAsync`, `AddAsync`, `SaveChangesAsync`
+- `ICustomFieldValueRepository` — `GetByCallRecordAsync` (with Definition nav), `GetByCallRecordAndDefinitionAsync`, `AddAsync`, `DeleteAsync`, `SaveChangesAsync`
+- `ICustomFieldService` + `ResolvedCustomField` record — `GetFieldsForCallAsync` (scope resolution + value pairing), `SetValueAsync` (upsert + snapshot refresh), `DeleteValueAsync` (delete + snapshot refresh)
+
+**Infrastructure**
+- `DataTypeConfiguration` — `public.data_types` table; stable well-known seed IDs (10000000-…-0001 through -0008); `AggregationFunctions` JSONB with value converter
+- `CustomFieldDefinitionConfiguration` — `custom_field_definitions` table; 3 indexes including unique `(tenant_id, field_name, client_id, campaign_id)`
+- `CustomFieldValueConfiguration` — `custom_field_values` table; FK cascade from definitions; unique `(call_record_id, definition_id)` index
+- `DataTypeRepository` — reads from `HubionDbContext` (public schema)
+- `CustomFieldDefinitionRepository`, `CustomFieldValueRepository` — lazy `ScopedTenantDbContextFactory` pattern
+- `CustomFieldService` — scope resolution (groups by `FieldName`, picks lowest `ScopeRank`); typed value parsing via `ApplyTypedValue`; snapshot rebuild via `RefreshSnapshotAsync` (loads all current values → composes JSON dict → updates call_record)
+- `HubionDbContext` — added `DataTypes` DbSet + `DataTypeConfiguration`
+- `TenantDbContext` — added `CustomFieldDefinitions`, `CustomFieldValues` DbSets + configurations
+- `ServiceCollectionExtensions` — registered `ICustomFieldDefinitionRepository`, `ICustomFieldValueRepository`, `IDataTypeRepository`, `ICustomFieldService`
+
+**API**
+- `GET /api/v1/data-types` — list all 8 data types (used by flow designer type picker)
+- `POST /api/v1/custom-field-definitions` — create with scope (clientId/campaignId optional); 400 on unknown data type name
+- `GET /api/v1/custom-field-definitions` — all for tenant; optional `?clientId=&campaignId=` for scope-filtered view
+- `GET /api/v1/custom-field-definitions/{id}` — get by id
+- `PATCH /api/v1/custom-field-definitions/{id}` — update label, displayOrder, isRequired, validationRules, isActive
+- `GET /api/v1/call-records/{id}/custom-fields` — scope-resolved definitions + current values for a call
+- `PUT /api/v1/call-records/{id}/custom-fields/{definitionId}` — upsert typed value; 400 on format error
+- `DELETE /api/v1/call-records/{id}/custom-fields/{definitionId}` — remove value; 204
+
+**Database**
+- Migration `AddDataTypes` (HubionDbContext) — creates `public.data_types` with all 8 seed rows ✓
+- Migration `AddCustomFields` (TenantDbContext) — creates `custom_field_definitions` + `custom_field_values` with all indexes ✓
+- Both applied to target databases ✓
+
+### Verified End-to-End
+
+| # | Test | Expected | Result |
+|---|------|----------|--------|
+| 1 | `GET /data-types` | 8 types, correct agg metadata | ✓ |
+| 2 | `POST /custom-field-definitions` (string) | 201, fieldName normalized to lowercase | ✓ |
+| 3 | `POST /custom-field-definitions` (currency, required) | 201, isRequired=true | ✓ |
+| 4 | `GET /custom-field-definitions` | 2 results | ✓ |
+| 5 | `GET /call-records/{id}/custom-fields` (no values) | 2 definitions, both value=null | ✓ |
+| 6 | `PUT .../custom-fields/{def1}` ("SUMMER25") | 200 | ✓ |
+| 7 | `PUT .../custom-fields/{def2}` ("29.95") | 200 | ✓ |
+| 8 | `GET /call-records/{id}/custom-fields` (values set) | promo_code="SUMMER25", donation_amount=29.95 | ✓ |
+| 9 | DB snapshot | `{"promo_code": "SUMMER25", "donation_amount": 29.95}` in call_records.custom_fields | ✓ |
+| 10 | `PATCH /custom-field-definitions/{id}` | label updated, isActive=false | ✓ |
+| 11 | `DELETE .../custom-fields/{def2}` | 204 | ✓ |
+| 12 | DB snapshot after delete | `{"promo_code": "SUMMER25"}` — donation_amount removed | ✓ |
+| 13 | Unknown data type name | 400 | ✓ |
+| 14 | Bad format value (currency "not-a-number") | 400 | ✓ |
+
+**Build:** 0 warnings, 0 errors ✓
+
+### Key Design Decisions
+
+- `DataType` lives in `HubionDbContext` (public schema) — platform reference, seeded once; no cross-schema FK from tenant tables (use string `DataTypeName` as the link, validated at domain layer)
+- `ScopeRank` on `CustomFieldDefinition` is a computed property (ignored by EF) — drives in-memory scope resolution in `CustomFieldService.ResolveMostSpecific()`
+- `ClearTypedColumns()` called before every `Set*()` — ensures only one typed column ever populated per row
+- Snapshot refreshed on every `SetValueAsync` and `DeleteValueAsync` — `call_records.custom_fields` always reflects current state without joins on read
+
+---
+
+## Session 16 — Agent UI Scaffold (Hubion.Web)
+
+**Date:** 2026-04-24
+**Start:** 7:12 AM PDT
+**End:** 7:58 AM PDT
+**Duration:** 46 minutes
+**Cumulative Total:** ~704 min
+
+### Goal
+
+Strategic direction confirmed: build the full Hubion platform — not releasing Hubion Flow as a standalone product first. Reporting and dashboards are deferred until all other systems (telephony, commerce, flow, custom fields, chat) are complete.
+
+Scaffold `Hubion.Web` — the React-based agent UI — with a 3-panel layout and a live flow panel wired to the flow engine backend. Plan and document the tenant-scoped enterprise chat system (placeholder in UI for now).
+
+### Strategic Decisions Made
+
+- **Full platform build order confirmed** — Hubion.Web Agent UI → Flow Designer → Chrome Extension → FreeSWITCH/Telephony → Hubion.Integrations → Chat → Hubion.HubService → Reporting & Dashboards
+- **Chat System architecture added to CLAUDE.md** — tenant-scoped, Slack/Pumble-level features: public/private channels, DMs, threads, @mentions, emoji reactions, presence; 5-table data model; `ChatHub : Hub<IChatHubClient>`; Redis for presence
+
+### What Was Built
+
+**`Hubion.Web/` — React + Vite + TypeScript SPA**
+
+Config files:
+- `package.json` — Vite 4, React 18, Tailwind CSS v3, React Router v6, Zustand v4, `@microsoft/signalr` v8 (pinned to Node 16-compatible versions; Node 24.15.0 installed in background — upgrade packages in Session 17)
+- `vite.config.ts` — proxies `/api` → `localhost:5135` and `/hubs` → `ws://localhost:5135`
+- `tailwind.config.js` + `postcss.config.js` — Tailwind v3 PostCSS pipeline
+- `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`
+- `index.html`
+
+Core source:
+- `src/main.tsx` — React 18 `createRoot`, `<StrictMode>`
+- `src/index.css` — Tailwind directives (`@tailwind base/components/utilities`)
+- `src/App.tsx` — `BrowserRouter` with `/login` and `/agent` routes; `RequireAuth` wrapper redirects to login if no token
+- `src/vite-env.d.ts` — Vite client type reference
+
+Types / stores / API:
+- `src/types/flow.ts` — `FlowNodeState`, `FlowOption`, `StartSessionRequest`, `AdvanceSessionRequest` (mirrors C# `FlowNodeState`)
+- `src/stores/authStore.ts` — Zustand with `persist` middleware; holds `token`, `agentId`, `tenantSubdomain`; `setAuth()` + `clearAuth()`
+- `src/api/client.ts` — `apiFetch` wrapper auto-injects `Authorization: Bearer` and `X-Tenant-Subdomain` headers from auth store
+- `src/api/auth.ts` — `login()` sends raw `fetch` with tenant header before auth state is populated
+- `src/api/flows.ts` — `list()`, `startSession()`, `getSession()`, `advance()`
+
+Pages:
+- `src/pages/LoginPage.tsx` — subdomain + email + password form; dark theme; calls `authApi.login()`, sets auth store, redirects to `/agent`
+- `src/pages/AgentPage.tsx` — thin wrapper that renders `<AgentShell />`
+
+Layout and panels:
+- `src/components/AgentShell.tsx` — 3-panel grid: 240px left softphone | flex center flow | 300px right chat; top bar with "Hubion" brand + sign-out button
+- `src/components/SoftphonePanel.tsx` — placeholder with phone icon + "Coming soon"
+- `src/components/ChatPanel.tsx` — placeholder with chat icon + "Channels, DMs & threads / Coming soon"
+
+Flow components (live, wired to backend):
+- `src/components/FlowPanel.tsx` — fetches flow list on mount; flow picker dropdown + Start button; `HubConnectionBuilder` with auto-reconnect; `JoinSession`/`LeaveSession` on session change; `advance()` calls `POST /flow-sessions/{id}/advance`; state machine: `idle → loading → running → error`
+- `src/components/NodeDisplay.tsx` — renders all node types: `script` (content + Continue), `input` (text/select/checkbox/date/phone inputs + Next), `end` (green check + terminal message); `branch`/`set_variable`/`api_call` all show Continue button
+
+**Build verified:** `npm run build` — 85 modules, 0 errors, 4.13s ✓
+
+### Infrastructure Note
+
+Node.js v16.17.0 was the active version when the session started — incompatible with Vite 6 / Tailwind v4's native oxide bindings. Packages were pinned to Node 16-compatible versions. Node.js 24.15.0 (LTS) was installed via `winget install OpenJS.NodeJS.LTS` in background during the session. Session 17 will open with a fresh terminal on Node 24 and upgrade packages to latest versions.
+
+### Pending for Session 17
+- Open fresh terminal, verify `node --version` shows 24.x
+- Upgrade `package.json` to latest Vite 6, Tailwind v4, React Router v7, React 19, Zustand v5
+- `npm install` + `npm run build` on the upgraded packages
+- Begin Flow Designer (visual no-code canvas, React Flow)
+
+---
+
+## Session 17
+
+**Date:** 2026-04-26
+**Start:** 6:45 AM PDT
+**End:** 6:58 AM PDT
+**Duration:** 13 minutes
+**Cumulative Total:** ~717 min
+
+### Goal
+
+Upgrade `Hubion.Web` packages to current versions (Node 24 now active) and build the Flow Designer — the visual no-code canvas built on React Flow.
+
+### Accomplished
+
+**Package upgrades — Hubion.Web**
+- Node 24.15.0 confirmed active (installed via winget in Session 16 background)
+- Vite 4 → 6.4.2; Tailwind CSS v3 (PostCSS) → v4 (`@tailwindcss/vite` plugin, `@import "tailwindcss"` in CSS, no `tailwind.config.js` or `postcss.config.js` or `autoprefixer`)
+- React 18.3 → 19.1; React Router v6 → v7.6; Zustand v4 → v5; TypeScript 5.6 → 5.8
+- `@xyflow/react` v12 installed — React Flow canvas library
+- Package count: 172 → 125 (Tailwind v4 Vite plugin replaced several PostCSS packages)
+- Build: 0 TypeScript errors ✓
+
+**Backend — FlowsEndpoints.cs**
+- `PUT /api/v1/flows/{id}` — new endpoint; calls `Flow.UpdateDefinition(definition)`, bumps version, returns detail response
+- `GET /api/v1/flows/{id}` — updated to return `definition` field via new `ToDetailResponse()` (previously excluded)
+- `UpdateFlowRequest` record added
+
+**Flow Designer — src/types/designer.ts**
+- `HubionNodeType` union type (script, input, branch, set_variable, api_call, end)
+- `NodeData` — flat record with all optional fields per node type (compatible with React Flow's generic `Node<T>`)
+- `HubionNodeDef`, `HubionFlowDefinition` — match the JSON flow schema from ARCHITECTURE.md §9
+- `NODE_META` — color, label, description, handle count per type (single/dual/none)
+- `defaultNodeData(type)` — factory returning sensible defaults for each type
+
+**Flow Designer — src/api/flows.ts**
+- `FlowSummary`, `FlowDetail` interfaces exported
+- Added `create`, `getDetail`, `updateDefinition`, `publish` methods for designer use
+
+**Flow Designer — custom node components (src/components/designer/nodes/)**
+- `NodeShell.tsx` — shared wrapper: colored header bar, ENTRY badge, target handle (top), source handle(s) (bottom); single/dual/none per type
+- Branch/ApiCall dual handles: left handle green (true/success), right handle red (false/error) — visually labeled in node body
+- `ScriptNode` (blue #3b82f6) — content preview
+- `InputNode` (emerald #10b981) — fieldType + required indicator
+- `BranchNode` (amber #f59e0b) — condition expression preview + true/false labels
+- `SetVariableNode` (violet #8b5cf6) — assignment count
+- `ApiCallNode` (indigo #6366f1) — method + URL preview + success/error labels
+- `EndNode` (red #ef4444) — status preview
+
+**Flow Designer — NodePalette.tsx**
+- 176px left panel; colored draggable cards per node type; `dataTransfer` sets `application/reactflow-node-type`
+
+**Flow Designer — NodePropertiesPanel.tsx**
+- 288px right panel; type-specific form fields:
+  - script: content textarea (5 rows), `{{namespace.field}}` hint
+  - input: fieldType dropdown (text/select/checkbox/date/phone/email/address), options textarea (select only), required checkbox
+  - branch: condition input, operator reference
+  - set_variable: dynamic key-value assignment list with add/remove
+  - api_call: method dropdown, URL, headers JSON textarea, body JSON textarea
+  - end: status input
+- "Set as Entry Node" button (hidden when already entry); "Delete Node" button
+- Node ID shown for reference
+
+**Flow Designer — FlowDesignerPage.tsx**
+- `ReactFlowProvider` outer wrapper; `DesignerCanvas` inner component uses `useReactFlow`
+- Drag-and-drop from palette via `onDrop` + `screenToFlowPosition`; first dropped node auto-set as entry
+- Edge connections via `onConnect` + `addEdge` (smoothstep type)
+- Node click → opens properties panel; pane click → deselects
+- Delete key removes selected nodes + connected edges
+- `toHubionDef()` — React Flow state → Hubion JSON; stores `_pos` in each node for layout persistence
+- `fromHubionDef()` — Hubion JSON → React Flow state; restores positions from `_pos`
+- Save: POST (new flow → redirects to `/designer/{id}`) or PUT (existing flow); status message auto-clears after 3s
+- Publish: `POST /flows/{id}/publish`; status message auto-clears after 4s
+- Load: fetches `GET /flows/{id}` on mount, parses `definition` JSON, restores full canvas state
+- React Flow: `Background` grid, `Controls`, `MiniMap` (color-coded by node type)
+
+**Routing + Navigation**
+- `App.tsx` — `/designer` (new flow) and `/designer/:id` (edit existing), both `RequireAuth`-wrapped
+- `AgentShell.tsx` — "Flow Designer" link in top bar navigates to `/designer`
+
+**Build:** 0 TypeScript errors, 0 warnings ✓ (253 modules; SignalR annotation warnings from third-party ESM bundle only)
+
+### Pending for Session 18
+- Chrome Extension (web automation bridge) — Manifest V3, background service worker, content scripts, frame registry, annotation system
+
+---
+
+## Session 18 — Script Node Rich Text Editor + Branding
+
+**Date:** 2026-04-26
+**Start:** 7:01 AM PDT
+**End:** 7:59 AM PDT
+**Duration:** 58 minutes
+**Cumulative Total:** ~775 min
+
+### Goal
+
+Live test the stack, diagnose and fix the input node loop bug, then build the Script node rich text editing experience (TipTap) and place Hubion branding assets across the app.
+
+### Accomplished
+
+**Bug fix — input node infinite loop**
+- Root cause: TypeScript `AdvanceSessionRequest` used field `input?: string` but the C# record deserialized the property as `inputValue` (camelCase). The backend always received `inputValue: null` → `InputNodeHandler` treated every advance as "no input submitted" → returned the same node. Fixed by renaming the TypeScript field to `inputValue` and updating `FlowPanel.tsx` to send `{ inputValue: input }`.
+- Secondary fix: `NodeDisplay.tsx` script content changed from plain text render to `dangerouslySetInnerHTML={{ __html: node.content }}` with `className="script-content"` so HTML-formatted script content renders correctly in the agent UI.
+
+**TipTap rich text editor — RichTextEditor.tsx**
+- Installed TipTap packages: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-text-style`, `@tiptap/extension-color`, `@tiptap/extension-highlight`, `@tiptap/extension-underline`, `@tiptap/extension-font-family`
+- Extensions: StarterKit, TextStyle (named import — default import does not exist), Color, Highlight (multicolor), Underline, FontFamily, custom FontSize (inline TipTap Extension using `addGlobalAttributes` on `textStyle` mark), Image (base64, allowBase64: true)
+- Toolbar: font family dropdown (Default/Arial/Georgia/Verdana/Times New Roman/Courier New), font size dropdown (10–28 px), Bold, Italic, Underline, text color picker, highlight color picker, bullet list, numbered list, insert image button, clear formatting, expand button
+- Color pickers: swatch grid popover with backdrop dismiss; active color shown as underline bar on button
+- Expand button: rendered only when `onExpand` prop is provided; far-right of toolbar
+- `index.css`: `.script-editor` rules for TipTap surface; `.script-content` rules for agent UI rendering; image rules for both (`max-width: 100%`, border-radius, selection outline)
+
+**Image support**
+- Installed `@tiptap/extension-image`
+- Paste: `editorProps.handlePaste` intercepts clipboard events, detects `image/*` MIME, reads as base64 Data URL via FileReader, inserts via ProseMirror transaction
+- Insert button: hidden `<input type="file" accept="image/*">` triggered by ref; reads file as base64 Data URL via FileReader, calls `editor.chain().setImage({ src })`
+- Images stored as inline base64 in script HTML — no server upload needed
+
+**Popout modal editor**
+- `ScriptEditorModal.tsx` — fixed full-viewport overlay (z-50), blurred dark backdrop, 90vw × 85vh white container, scrollable body with full RichTextEditor (no expand button), Done button + backdrop click closes
+- `ScriptContentEditor.tsx` — wrapper holding `modalOpen` state; when modal open: compact editor unmounted, dashed placeholder shown so panel keeps shape; when closed: compact editor remounts from latest `content` prop
+- `NodePropertiesPanel.tsx` — script case replaced `RichTextEditor` with `<ScriptContentEditor key={node.id} />` (key resets TipTap on node switch)
+
+**Hubion branding**
+- `Images/hubion-favicon.svg` and `Images/hubion-logo.svg` copied to `Hubion.Web/public/`
+- `index.html` — `<link rel="icon" href="/hubion-favicon.svg" type="image/svg+xml">` added
+- `LoginPage.tsx` — favicon icon (56px, centered) replaces plain "Hubion" h1; dark card background makes the blue gradient favicon pop
+- `AgentShell.tsx` — favicon icon (24px) + "Hubion" white text replaces plain indigo text span in top bar
+- `FlowDesignerPage.tsx` — full logo SVG (h-8, 32px tall) added to left of top bar before the Back button; vertical divider separates logo from nav controls; light bar background is the design target for the full wordmark logo
+
+**Build:** 0 TypeScript errors ✓
+
+### Pending for Session 19
+- Chrome Extension (web automation bridge) — Manifest V3, background service worker, content scripts, frame registry, annotation system
+- Continue working through remaining Flow Designer node types (Input, Branch, Set Variable, API Call, End)

@@ -3,6 +3,7 @@ using Hubion.Application.Interfaces.Services;
 using Hubion.Application.Services;
 using Hubion.Infrastructure.Auth;
 using Hubion.Infrastructure.Commerce;
+using Hubion.Infrastructure.CustomFields;
 using Hubion.Infrastructure.Data;
 using Hubion.Infrastructure.FlowEngine;
 using Hubion.Infrastructure.FlowEngine.NodeHandlers;
@@ -47,6 +48,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOfferRepository, OfferRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<ICustomFieldDefinitionRepository, CustomFieldDefinitionRepository>();
+        services.AddScoped<ICustomFieldValueRepository, CustomFieldValueRepository>();
+        services.AddScoped<IDataTypeRepository, DataTypeRepository>();
 
         // Services
         services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
@@ -56,6 +60,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<ISubscriptionOrderCreator, SubscriptionOrderCreator>();
+        services.AddScoped<ICustomFieldService, CustomFieldService>();
 
         // Tax providers — each ITaxProvider is enumerated by TaxProviderFactory to build its dispatch table.
         // Register FlatRateTaxProvider first (it is the default/fallback).

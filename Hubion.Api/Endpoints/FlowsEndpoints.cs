@@ -44,7 +44,7 @@ public static class FlowsEndpoints
             return Results.Created($"/api/v1/flows/{flow.Id}", flow.ToResponse());
         });
 
-        // Get a flow by ID
+        // Get a flow by ID (includes definition for designer)
         group.MapGet("/{id:guid}", async (
             Guid id,
             IFlowRepository flows,
@@ -57,7 +57,27 @@ public static class FlowsEndpoints
             if (flow is null || flow.TenantId != tenantContext.Current.Id)
                 return Results.NotFound();
 
-            return Results.Ok(flow.ToResponse());
+            return Results.Ok(flow.ToDetailResponse());
+        });
+
+        // Update flow name and/or definition (bumps version; does not re-publish)
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateFlowRequest req,
+            IFlowRepository flows,
+            TenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Current is null) return Results.Unauthorized();
+
+            var flow = await flows.GetByIdAsync(id, ct);
+            if (flow is null || flow.TenantId != tenantContext.Current.Id)
+                return Results.NotFound();
+
+            flow.UpdateDefinition(req.Definition);
+            await flows.SaveChangesAsync(ct);
+
+            return Results.Ok(flow.ToDetailResponse());
         });
 
         // Publish a draft flow (makes it available for sessions)
@@ -102,8 +122,21 @@ public static class FlowsEndpoints
         client_id   = f.ClientId,
         campaign_id = f.CampaignId,
         created_at  = f.CreatedAt,
-        updated_at  = f.UpdatedAt
-        // definition excluded — large payload; use dedicated endpoint if needed
+        updated_at  = f.UpdatedAt,
+    };
+
+    private static object ToDetailResponse(this Flow f) => new
+    {
+        id          = f.Id,
+        name        = f.Name,
+        flow_type   = f.FlowType,
+        version     = f.Version,
+        is_active   = f.IsActive,
+        client_id   = f.ClientId,
+        campaign_id = f.CampaignId,
+        created_at  = f.CreatedAt,
+        updated_at  = f.UpdatedAt,
+        definition  = f.Definition,
     };
 }
 
@@ -113,3 +146,5 @@ public record CreateFlowRequest(
     string Definition,
     Guid? ClientId,
     Guid? CampaignId);
+
+public record UpdateFlowRequest(string Definition);

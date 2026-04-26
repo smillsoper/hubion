@@ -8,7 +8,7 @@ DevLog.md needs to be updated every session with the session start date and time
 
 ## Current Project Status
 
-**As of:** 2026-04-23 (Session 14 complete)
+**As of:** 2026-04-26 (Session 18 complete)
 
 ### Solution Structure
 
@@ -259,11 +259,118 @@ These gaps were identified in Session 7 analysis. Each session tackles one gap e
 | **12** | Subscription lifecycle | ✓ Complete — Session 12 |
 | **13** | Category/attribute system | ✓ Complete — Session 13 |
 
+**Custom Fields (Session 15)**
+- `public.data_types` — 8 seeded types (string, integer, decimal, currency, boolean, date, datetime, json); each carries `IsAggregatable` + `AggregationFunctions` to drive reporting widget builder
+- `custom_field_definitions` — tenant/client/campaign scoped; scope resolution: campaign > client > tenant
+- `custom_field_values` — typed columns (one populated per row); `(call_record_id, definition_id)` unique
+- `call_records.custom_fields` JSONB — denormalized snapshot updated on every set/delete; fast read without joins
+- `ICustomFieldService` — scope resolution, typed parsing, snapshot refresh
+- API: `GET /data-types`, `POST/GET/PATCH /custom-field-definitions`, `GET/PUT/DELETE /call-records/{id}/custom-fields/{defId}`
+
+---
+
+### Strategic Decision (Session 16)
+
+Building the **full Hubion platform** — not releasing Hubion Flow as a standalone product first. Reporting and dashboards will be built **last** as all other systems (telephony, commerce, flow, custom fields, chat) feed into it.
+
+**Remaining build order:**
+1. **Hubion.Web — Agent UI** ✓ Complete (Session 16)
+2. **Hubion.Web — Flow Designer** ✓ Complete (Session 17)
+3. **Hubion.Web — Script Node Editor** ✓ Complete (Session 18)
+4. **Chrome Extension** (web automation bridge) ← next
+4. **FreeSWITCH + Telephony** (ESL, parallel queue engine, screen pop)
+5. **Hubion.Integrations + API Builder** (no-code adapter framework)
+6. **Chat System** (tenant-scoped, enterprise features)
+7. **Hubion.HubService** (dedicated SignalR hub)
+8. **Reporting & Dashboards** (last — all data feeds in by this point)
+
+---
+
+### Agent UI Layout Decision (Session 16)
+
+The agent UI uses a **3-panel layout**:
+- **Left (~240px):** Softphone — WebRTC soft phone, call controls, agent status
+- **Center (flex):** Flow/Script display — the flow engine pushes node state here
+- **Right (~300px):** Chat — tenant-scoped enterprise chat
+
+---
+
+### Chat System Architecture (planned — not yet built)
+
+Tenant-scoped enterprise chat embedded in the agent UI right panel. Replaces need for Slack/Pumble/Ryver as a separate tool. All agent communication stays inside the platform.
+
+**Features:** public/private channels, direct messages (1:1 and group), thread replies, emoji reactions, @mentions with notifications, agent presence (online/away/busy/offline), unread counts, message history with pagination, file attachments (future), pinned messages (future), search (future)
+
+**Data model (tenant schema):**
+```sql
+chat_channels        — id, tenant_id, name, slug, description, type (public/private/direct), created_by, is_archived
+chat_channel_members — channel_id, agent_id, role (admin/member), joined_at, last_read_at
+chat_messages        — id, channel_id, agent_id, content, parent_message_id (null=top-level), is_edited, is_deleted, created_at, edited_at
+chat_message_reactions — message_id, agent_id, emoji, reacted_at
+chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
+```
+
+**Real-time:** `ChatHub : Hub<IChatHubClient>` — JoinChannel, LeaveChannel, SendMessage, StartTyping, StopTyping
+**Presence:** `agent_presence` tracked in Redis (key per agent, TTL heartbeat)
+**DMs:** `type = 'direct'`, members = participants, slug derived from sorted agent IDs
+
+---
+
+### Flow Designer — Hubion.Web (Session 17)
+
+- **Package upgrades** — Vite 6.4, Tailwind v4 (CSS `@import "tailwindcss"`, `@tailwindcss/vite` plugin, no more `tailwind.config.js` or `postcss.config.js`), React 19.1, React Router v7.6, Zustand v5.0, TypeScript 5.8; `node_modules` reduced from 172 → 125 packages
+- **`@xyflow/react` v12** installed — React Flow canvas library
+- **Backend** — `PUT /api/v1/flows/{id}` endpoint added (calls `Flow.UpdateDefinition`, bumps version); `GET /api/v1/flows/{id}` now includes `definition` field via `ToDetailResponse()`; `UpdateFlowRequest` record added
+- **`src/types/designer.ts`** — `HubionNodeType`, `NodeData`, `HubionNodeDef`, `HubionFlowDefinition`, `NODE_META` (colors/descriptions), `defaultNodeData()` factory
+- **`src/api/flows.ts`** — extended with `create`, `getDetail`, `updateDefinition`, `publish` for designer; `FlowSummary`/`FlowDetail` types exported
+- **Custom node components** (`src/components/designer/nodes/`):
+  - `NodeShell.tsx` — shared base; colored header + ENTRY badge; target/source handles (single, dual, none)
+  - `ScriptNode` (blue), `InputNode` (emerald), `BranchNode` (amber), `SetVariableNode` (violet), `ApiCallNode` (indigo), `EndNode` (red)
+  - Branch/ApiCall nodes have dual source handles (true/false, success/error) with color coding
+- **`NodePalette.tsx`** — 180px left panel; draggable node type cards; sets `dataTransfer`
+- **`NodePropertiesPanel.tsx`** — 288px right panel; type-specific form fields (script: content textarea; input: fieldType + required + options; branch: condition expression; set_variable: dynamic key-value assignments; api_call: method/url/headers/body; end: status); Set Entry Node button; Delete Node button
+- **`FlowDesignerPage.tsx`** — full canvas page:
+  - `ReactFlowProvider` wrapper + `DesignerCanvas` inner component (uses `useReactFlow`)
+  - Drag-and-drop nodes from palette via `onDrop` + `screenToFlowPosition`
+  - Edge connections via `onConnect` + `addEdge` (smoothstep)
+  - Node click → properties panel; pane click → deselect
+  - Delete key removes selected nodes
+  - `toHubionDef()` — converts React Flow state → Hubion JSON definition (with `_pos` for layout persistence)
+  - `fromHubionDef()` — converts Hubion JSON → React Flow state (restores node positions)
+  - Save: POST (new flow) or PUT (existing flow) to API; updates URL to `/designer/{id}`
+  - Publish: calls `POST /flows/{id}/publish`; status message auto-clears
+  - Load existing flow via `GET /flows/{id}` on mount (parses `definition` JSON)
+  - React Flow: Background grid, Controls, MiniMap (color-coded by node type)
+- **`App.tsx`** — added `/designer` (new flow) and `/designer/:id` (edit existing) routes; both `RequireAuth`-wrapped
+- **`AgentShell.tsx`** — "Flow Designer" link in top bar navigates to `/designer`
+- Build: **0 errors** ✓; 253 modules (React Flow adds ~170 modules to bundle)
+
+---
+
+### Script Node Rich Text Editor — Hubion.Web (Session 18)
+
+- **Bug fix** — `AdvanceSessionRequest` field renamed from `input` → `inputValue` in TypeScript to match C# record; `FlowPanel.tsx` updated to send `{ inputValue: input }`; fixes input node infinite loop
+- **`NodeDisplay.tsx`** — script content rendered via `dangerouslySetInnerHTML` with `className="script-content"` so HTML formatting displays correctly in agent UI
+- **TipTap packages installed** — `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-text-style` (named import), `@tiptap/extension-color`, `@tiptap/extension-highlight`, `@tiptap/extension-underline`, `@tiptap/extension-font-family`, `@tiptap/extension-image`
+- **`RichTextEditor.tsx`** — full-featured toolbar: font family (Default/Arial/Georgia/Verdana/Times New Roman/Courier New), font size (10–28px, custom TipTap `FontSize` extension via `addGlobalAttributes`), B/I/U, text color picker, highlight color picker (each with swatch grid popover), bullet list, numbered list, insert image button, clear formatting, expand button (optional `onExpand` prop)
+- **Image support** — `editorProps.handlePaste` for clipboard paste (screenshot/copy-from-browser); hidden file `<input>` for insert button; both encode as base64 Data URL — no server upload; CSS added for `img` in both `.script-editor` and `.script-content`
+- **`ScriptEditorModal.tsx`** — fixed-position full-viewport modal (z-50), backdrop blur, 90vw × 85vh white container, full RichTextEditor (no expand), Done + backdrop-click close
+- **`ScriptContentEditor.tsx`** — wrapper with `modalOpen` state; when modal open: compact editor unmounted and placeholder shown; when closed: compact editor remounts from `content` prop; exported for use in NodePropertiesPanel
+- **`NodePropertiesPanel.tsx`** — script case uses `<ScriptContentEditor key={node.id}>` (key resets TipTap when switching nodes)
+- **Branding** — `hubion-favicon.svg` + `hubion-logo.svg` copied to `Hubion.Web/public/`; `index.html` favicon link; login page: 56px favicon icon centered in card header; agent shell header: 24px favicon + white "Hubion"; flow designer header: full logo (h-8) with divider separator
+- **`index.css`** — image rules for `.script-editor` and `.script-content`
+
+---
+
 ### What Is NOT Done Yet — Other
 
-- **`Hubion.HubService`** — SignalR hub project not yet created
+- **`Hubion.Web`** — Agent UI ✓ complete (Session 16 + 17): login, 3-panel layout, flow panel (live), softphone + chat placeholders, Flow Designer
+- **`Hubion.Web` — Flow Designer** ✓ complete (Session 17) — see below
+- **`Hubion.Web` — Script Node Editor** ✓ complete (Session 18): TipTap rich text editor with font family/size, bold/italic/underline, text color, highlight color, bullet/numbered lists, image paste + insert, popout modal editor; Hubion branding assets deployed across all pages
+- **Chrome Extension** — web automation bridge not yet built ← next
+- **Chat System** — backend domain/API/SignalR not yet built (UI placeholder exists)
+- **`Hubion.HubService`** — dedicated SignalR hub project not yet created
 - **`Hubion.Integrations`** — adapter framework project not yet created
-- **`Hubion.Web`** — React frontend not yet scaffolded
 - **Test projects** — `Hubion.Domain.Tests` ✓ (45 tests), `Hubion.Application.Tests` ✓ (20 tests); `Hubion.Infrastructure.Tests` and `Hubion.Api.Tests` not yet created
 
 ---
@@ -286,8 +393,11 @@ These gaps were identified in Session 7 analysis. Each session tackles one gap e
 docker compose up -d                              # start all services
 docker compose down                               # stop all services
 dotnet watch run --project Hubion.Api             # hot-reload API (localhost:5135)
+cd Hubion.Web && npm run dev                      # Vite dev server (localhost:3000), proxies /api + /hubs to :5135
 dotnet ef migrations add <Name> --context TenantDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
 dotnet ef database update --context TenantDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
+dotnet ef migrations add <Name> --context HubionDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
+dotnet ef database update --context HubionDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
 ```
 
 pgAdmin: http://localhost:5050

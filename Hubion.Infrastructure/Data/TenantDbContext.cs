@@ -28,6 +28,8 @@ public class TenantDbContext : DbContext
     public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
     public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
     public DbSet<ProductAttributeValue> ProductAttributeValues => Set<ProductAttributeValue>();
+    public DbSet<CustomFieldDefinition> CustomFieldDefinitions => Set<CustomFieldDefinition>();
+    public DbSet<CustomFieldValue> CustomFieldValues => Set<CustomFieldValue>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +47,8 @@ public class TenantDbContext : DbContext
         modelBuilder.ApplyConfiguration(new ProductCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductAttributeConfiguration());
         modelBuilder.ApplyConfiguration(new ProductAttributeValueConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomFieldDefinitionConfiguration());
+        modelBuilder.ApplyConfiguration(new CustomFieldValueConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 

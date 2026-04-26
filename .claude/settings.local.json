@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec -i hubion-postgres-1 psql -U hubion -d hubion_master -c ' *)"
+    ]
+  }
+}

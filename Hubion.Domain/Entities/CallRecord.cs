@@ -164,6 +164,12 @@ public class CallRecord
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void UpdateCustomFieldsSnapshot(string? snapshotJson)
+    {
+        CustomFields = snapshotJson;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void SetFinancials(decimal totalAmount, decimal taxAmount, string paymentStatus)
     {
         TotalAmount = totalAmount;

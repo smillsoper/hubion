@@ -82,6 +82,7 @@ app.MapOrdersEndpoints();
 app.MapSubscriptionsEndpoints();
 app.MapFlowsEndpoints();
 app.MapFlowSessionsEndpoints();
+app.MapCustomFieldsEndpoints();
 
 // SignalR hub
 app.MapHub<FlowHub>("/hubs/flow");

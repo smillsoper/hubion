@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="420" height="100">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0EA5E9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0369A1;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38BDF8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0EA5E9;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Icon: Hub with orbital rings and nodes -->
+  <!-- Outer ring -->
+  <circle cx="50" cy="50" r="38" fill="none" stroke="url(#iconGrad)" stroke-width="2" opacity="0.3"/>
+  <!-- Middle ring -->
+  <circle cx="50" cy="50" r="26" fill="none" stroke="url(#iconGrad)" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Orbital arc top-right -->
+  <path d="M 50 12 A 38 38 0 0 1 88 50" fill="none" stroke="url(#accentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Orbital arc bottom-left -->
+  <path d="M 50 88 A 38 38 0 0 1 12 50" fill="none" stroke="url(#accentGrad)" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Center hub -->
+  <circle cx="50" cy="50" r="11" fill="url(#iconGrad)" filter="url(#glow)"/>
+  <circle cx="50" cy="50" r="6" fill="white" opacity="0.95"/>
+
+  <!-- Spoke lines -->
+  <line x1="50" y1="39" x2="50" y2="24" stroke="url(#iconGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <line x1="50" y1="61" x2="50" y2="76" stroke="url(#iconGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <line x1="39" y1="50" x2="24" y2="50" stroke="url(#iconGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  <line x1="61" y1="50" x2="76" y2="50" stroke="url(#iconGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Diagonal spokes -->
+  <line x1="42" y1="42" x2="31" y2="31" stroke="url(#iconGrad)" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="58" y1="58" x2="69" y2="69" stroke="url(#iconGrad)" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="58" y1="42" x2="69" y2="31" stroke="url(#iconGrad)" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="42" y1="58" x2="31" y2="69" stroke="url(#iconGrad)" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- Outer nodes -->
+  <circle cx="50" cy="12" r="4.5" fill="url(#iconGrad)"/>
+  <circle cx="88" cy="50" r="4.5" fill="url(#iconGrad)"/>
+  <circle cx="50" cy="88" r="4.5" fill="url(#iconGrad)"/>
+  <circle cx="12" cy="50" r="4.5" fill="url(#iconGrad)"/>
+
+  <!-- Diagonal nodes (smaller) -->
+  <circle cx="77" cy="23" r="3" fill="#38BDF8" opacity="0.8"/>
+  <circle cx="23" cy="77" r="3" fill="#38BDF8" opacity="0.8"/>
+  <circle cx="23" cy="23" r="3" fill="#38BDF8" opacity="0.8"/>
+  <circle cx="77" cy="77" r="3" fill="#38BDF8" opacity="0.8"/>
+
+  <!-- Wordmark: "Hubion" -->
+  <text x="108" y="62"
+    font-family="'Trebuchet MS', 'Segoe UI', sans-serif"
+    font-size="42"
+    font-weight="700"
+    letter-spacing="-1"
+    fill="#0F172A">Hub</text>
+  <text x="193" y="62"
+    font-family="'Trebuchet MS', 'Segoe UI', sans-serif"
+    font-size="42"
+    font-weight="300"
+    letter-spacing="-1"
+    fill="#0EA5E9">ion</text>
+
+  <!-- Tagline -->
+  <text x="109" y="78"
+    font-family="'Trebuchet MS', 'Segoe UI', sans-serif"
+    font-size="10"
+    font-weight="400"
+    letter-spacing="3.5"
+    fill="#64748B">CALL CENTER PLATFORM</text>
+</svg>

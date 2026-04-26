@@ -9,11 +9,13 @@ public class HubionDbContext : DbContext
     public HubionDbContext(DbContextOptions<HubionDbContext> options) : base(options) { }
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<DataType> DataTypes => Set<DataType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("public");
         modelBuilder.ApplyConfiguration(new TenantConfiguration());
+        modelBuilder.ApplyConfiguration(new DataTypeConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }
