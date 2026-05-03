@@ -1,0 +1,151 @@
+using ContactConnection.Application.Interfaces.Repositories;
+using ContactConnection.Application.Interfaces.Services;
+using ContactConnection.Application.Services;
+using ContactConnection.Domain.Entities;
+using ContactConnection.Domain.ValueObjects.Commerce;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ContactConnection.Api.Endpoints;
+
+public static class CallRecordsEndpoints
+{
+    public static IEndpointRouteBuilder MapCallRecordsEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/v1/call-records").RequireAuthorization();
+
+        group.MapGet("{id:guid}", GetById);
+        group.MapGet("{id:guid}/cart", GetCart);
+        group.MapPut("{id:guid}/cart", SetCart);
+
+        return app;
+    }
+
+    private static async Task<IResult> GetById(
+        Guid id,
+        ICallRecordRepository callRecords,
+        TenantContext tenantContext,
+        CancellationToken ct)
+    {
+        if (!tenantContext.HasTenant)
+            return Results.Unauthorized();
+
+        var record = await callRecords.GetByIdWithInteractionsAsync(id, ct);
+
+        return record is null ? Results.NotFound() : Results.Ok(ToResponse(record));
+    }
+
+    // ── GET /api/v1/call-records/{id}/cart ──────────────────────────────────
+
+    private static async Task<IResult> GetCart(
+        Guid id,
+        ICallRecordRepository callRecords,
+        TenantContext tenantContext,
+        CancellationToken ct)
+    {
+        if (!tenantContext.HasTenant)
+            return Results.Unauthorized();
+
+        var record = await callRecords.GetByIdWithInteractionsAsync(id, ct);
+        if (record is null) return Results.NotFound();
+
+        return record.Cart is null ? Results.NoContent() : Results.Ok(record.Cart);
+    }
+
+    // ── PUT /api/v1/call-records/{id}/cart ──────────────────────────────────
+    // Accepts a CartDocument, re-calculates totals, then swaps inventory reservations.
+    // Returns 409 Conflict with a list of SKUs if any item cannot be reserved.
+
+    private static async Task<IResult> SetCart(
+        Guid id,
+        CartDocument cartRequest,
+        ICallRecordRepository callRecords,
+        IPricingService pricing,
+        IInventoryService inventory,
+        TenantContext tenantContext,
+        CancellationToken ct)
+    {
+        if (!tenantContext.HasTenant)
+            return Results.Unauthorized();
+
+        var record = await callRecords.GetByIdWithInteractionsAsync(id, ct);
+        if (record is null) return Results.NotFound();
+
+        // Release reservations held by the existing cart (if any) before applying the new one.
+        await inventory.ReleaseCartAsync(record.Cart, ct);
+
+        // Attempt to reserve inventory for the incoming cart.
+        var unavailable = await inventory.ReserveCartAsync(cartRequest, ct);
+        if (unavailable.Count > 0)
+        {
+            // Restore the old cart's reservations so the call record is consistent.
+            if (record.Cart is not null)
+                await inventory.ReserveCartAsync(record.Cart, ct);
+
+            return Results.Conflict(new { Message = "Insufficient inventory.", UnavailableSkus = unavailable });
+        }
+
+        var calculated = await pricing.CalculateTotalsAsync(cartRequest, ct);
+        record.SetCart(calculated);
+        await callRecords.SaveChangesAsync(ct);
+
+        return Results.Ok(calculated);
+    }
+
+    private static object ToResponse(CallRecord r) => new
+    {
+        r.Id,
+        r.TenantId,
+        r.ClientId,
+        r.CampaignId,
+        r.AgentId,
+        r.Source,
+        r.RecordType,
+        r.OverallStatus,
+        CallerIdentity = new
+        {
+            r.CallerId,
+            r.AccountNumber,
+            r.FirstName,
+            r.LastName,
+            r.Email,
+            r.Phone
+        },
+        Timing = new
+        {
+            r.CallStartAt,
+            r.CallEndAt,
+            r.HandleTimeSeconds
+        },
+        Financial = new
+        {
+            r.TotalAmount,
+            r.TaxAmount,
+            r.PaymentStatus
+        },
+        Fulfillment = new
+        {
+            r.FulfillmentStatus,
+            r.TrackingNumber
+        },
+        r.Addresses,
+        r.CommitmentEvents,
+        r.Cart,
+        r.RecordingUrl,
+        Interactions = r.Interactions.Select(i => new
+        {
+            i.Id,
+            i.InteractionNumber,
+            i.Type,
+            i.FlowId,
+            i.FlowVersion,
+            i.Disposition,
+            i.Status,
+            i.CommitmentEvents,
+            i.CartId,
+            i.StartedAt,
+            i.CompletedAt
+        }),
+        r.CreatedAt,
+        r.UpdatedAt
+    };
+}

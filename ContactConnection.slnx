@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="ContactConnection.Api/ContactConnection.Api.csproj" />
+  <Project Path="ContactConnection.Application/ContactConnection.Application.csproj" />
+  <Project Path="ContactConnection.Domain/ContactConnection.Domain.csproj" />
+  <Project Path="ContactConnection.Infrastructure/ContactConnection.Infrastructure.csproj" />
+  <Project Path="ContactConnection.Worker/ContactConnection.Worker.csproj" />
+  <Project Path="tests/ContactConnection.Domain.Tests/ContactConnection.Domain.Tests.csproj" />
+  <Project Path="tests/ContactConnection.Application.Tests/ContactConnection.Application.Tests.csproj" />
+</Solution>

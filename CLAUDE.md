@@ -13,12 +13,12 @@ DevLog.md needs to be updated every session with the session start date and time
 ### Solution Structure
 
 ```
-Hubion.slnx
-├── Hubion.Domain          ← Core domain models, value objects, enums. No dependencies.
-├── Hubion.Application     ← Business logic, use cases, interfaces. Depends on Domain only.
-├── Hubion.Infrastructure  ← EF Core + Npgsql, repositories, services. Depends on Application + Domain.
-├── Hubion.Api             ← ASP.NET Core Web API. Depends on Application + Infrastructure.
-└── Hubion.Worker          ← .NET Worker Service. BackgroundService jobs. Depends on Application + Infrastructure.
+ContactConnection.slnx
+├── ContactConnection.Domain          ← Core domain models, value objects, enums. No dependencies.
+├── ContactConnection.Application     ← Business logic, use cases, interfaces. Depends on Domain only.
+├── ContactConnection.Infrastructure  ← EF Core + Npgsql, repositories, services. Depends on Application + Domain.
+├── ContactConnection.Api             ← ASP.NET Core Web API. Depends on Application + Infrastructure.
+└── ContactConnection.Worker          ← .NET Worker Service. BackgroundService jobs. Depends on Application + Infrastructure.
 ```
 
 Clean Architecture dependency chain: `Domain ← Application ← Infrastructure ← Api`
@@ -42,7 +42,7 @@ Build status: **0 warnings, 0 errors.**
 - `Original Application/` is in `.gitignore` — local reference only, never committed
 
 **Secrets**
-- `.NET User Secrets` initialized for `Hubion.Api` — connection string NOT in any committed file
+- `.NET User Secrets` initialized for `ContactConnection.Api` — connection string NOT in any committed file
 - Local connection: `Host=localhost;Port=5432;Database=hubion_master;Username=hubion;Password=hubion_dev`
 
 **Domain**
@@ -70,7 +70,7 @@ Build status: **0 warnings, 0 errors.**
 - `TenantContext` — scoped service holding the resolved `Tenant` for the current request
 
 **Infrastructure**
-- `HubionDbContext` — `public` schema, `tenants` table
+- `ContactConnectionDbContext` — `public` schema, `tenants` table
 - `TenantDbContext` — no default schema, `agents` + `call_records` + `call_interactions`; search_path applied per connection
 - `TenantDbContextFactory` — builds `TenantDbContext` with `Search Path=tenant_{schema},public`
 - `ScopedTenantDbContextFactory` — resolves tenant from `TenantContext`, creates context for current request
@@ -95,16 +95,16 @@ Build status: **0 warnings, 0 errors.**
 - Migration `AddProductsAndCart` applied to `tenant_tms` ✓
 
 **Test Projects (Session 14)**
-- `tests/Hubion.Domain.Tests/` — 45 passing xUnit tests across 4 test classes:
+- `tests/ContactConnection.Domain.Tests/` — 45 passing xUnit tests across 4 test classes:
   - `ProductInventoryTests` — `CanAddToCart`, `Reserve`, `Release`, `Confirm` for all InventoryStatus values and DecrementOnOrder states
   - `OrderLineLifecycleTests` — `FromCartItem` snapshot, `Ship`, `MarkDelivered`, `Cancel`, `CreateFromSubscription`
   - `OrderLifecycleTests` — `Cancel`; `RefreshStatus` all transitions; `CreateFromSubscription` null CallRecordId guard
   - `SubscriptionLifecycleTests` — `IsDue` (incl. past-date via backing field reflection), `RecordShipment`, `Pause/Resume/Cancel`
-- `tests/Hubion.Application.Tests/` — 20 passing xUnit tests across 2 test classes:
+- `tests/ContactConnection.Application.Tests/` — 20 passing xUnit tests across 2 test classes:
   - `PricingServiceResolvePaymentsTests` — base fallback, QPB threshold/miss/best-break, MixMatch threshold/miss/priority/exclusion
   - `PricingServiceCalculateTotalsTests` — empty cart, subtotal/shipping/tax, shipping-exempt, weight-tier/subtotal-tier/precedence, multi-payment breakdowns, split/no-split shipping, RoundSplit remainder
 - `PricingService` constructed with real `FlatRateTaxProvider` + `TaxProviderFactory` (pure computation, no mocking needed)
-- Both projects added to `Hubion.slnx`; `dotnet test` runs all 65 tests in ~600ms
+- Both projects added to `ContactConnection.slnx`; `dotnet test` runs all 65 tests in ~600ms
 
 **Commerce Engine — Category/attribute system (Session 13)**
 - `ProductCategory` entity — hierarchical tree via self-referential `ParentId`; `Name`, `Slug`, `DisplayOrder`, `IsActive`; `Children` navigation; `Create()`, `Rename()`, `Activate()`, `Deactivate()`
@@ -128,13 +128,13 @@ Build status: **0 warnings, 0 errors.**
 - Migration `AddCategoriesAndAttributes` applied to `tenant_tms` ✓
 - Bug fix: `ProductAttributeValue` values added via `DbSet.AddAsync` directly (not through collection tracking) to avoid `DbUpdateConcurrencyException` in EF Core 10
 
-**Commerce Engine — Subscription lifecycle + Hubion.Worker (Session 12)**
+**Commerce Engine — Subscription lifecycle + ContactConnection.Worker (Session 12)**
 - `Order.CallRecordId` nullable; `Order.CreateFromSubscription` + `OrderLine.CreateFromSubscription` factories
 - `Subscription` entity — AutoShip enrollment snapshot; `IsDue()`, `RecordShipment()`, `Pause()`, `Resume()`, `Cancel()`; `SubscriptionStatus` static class
 - `ISubscriptionRepository`, `ISubscriptionOrderCreator` (Application); `SubscriptionRepository`, `SubscriptionOrderCreator`, `SubscriptionConfiguration` (Infrastructure)
 - `OrderService` auto-creates subscriptions on order commit for any `AutoShip=true && IntervalDays>0` lines
 - API: `GET /call-records/{id}/subscriptions`, `GET /subscriptions/{id}`, `POST .../pause`, `.../resume`, `.../cancel`
-- `Hubion.Worker` project — `Microsoft.NET.Sdk.Worker`; `SubscriptionProcessingService : BackgroundService`; hourly cadence; per-tenant scoped processing via `TenantContext.Current` injection; per-subscription error isolation
+- `ContactConnection.Worker` project — `Microsoft.NET.Sdk.Worker`; `SubscriptionProcessingService : BackgroundService`; hourly cadence; per-tenant scoped processing via `TenantContext.Current` injection; per-subscription error isolation
 - Migration `AddSubscriptions` applied ✓
 
 **Commerce Engine — Order entity (Session 11)**
@@ -223,16 +223,16 @@ Build status: **0 warnings, 0 errors.**
 
 ### CRMPro Flow Engine Analysis (Session 4 — informs Session 5 build)
 
-**Tag syntax:** `<*...*>` with executable VB.NET between delimiters. Hubion uses `{{namespace.field}}` (declarative, safe, no-code).
+**Tag syntax:** `<*...*>` with executable VB.NET between delimiters. ContactConnection uses `{{namespace.field}}` (declarative, safe, no-code).
 
-**Namespace mapping (CRMPro → Hubion):**
+**Namespace mapping (CRMPro → ContactConnection):**
 - `CallDetail.*` → `{{call_record.*}}` + `{{caller.*}}`
 - `User.*` → `{{agent.*}}`
 - `ScriptForm.[ControlName].Text` → `{{input.[node_id]}}`
 - `WebServiceControl.Response` → `{{api.[node_id].*}}`
 - Programmatically set values → `{{flow.*}}`
 
-**Script structure:** AccordionControl = top-level container; each AccordionItem panel = one flow step. Branching = button click handlers calling `SelectedIndex = N`. Hubion replaces this with a `branch` node with declared condition + named transitions.
+**Script structure:** AccordionControl = top-level container; each AccordionItem panel = one flow step. Branching = button click handlers calling `SelectedIndex = N`. ContactConnection replaces this with a `branch` node with declared condition + named transitions.
 
 **Node types confirmed by real CRMPro usage:**
 - `script` ← RichTextBoxControl/LabelControl with ScriptBox template
@@ -271,17 +271,17 @@ These gaps were identified in Session 7 analysis. Each session tackles one gap e
 
 ### Strategic Decision (Session 16)
 
-Building the **full Hubion platform** — not releasing Hubion Flow as a standalone product first. Reporting and dashboards will be built **last** as all other systems (telephony, commerce, flow, custom fields, chat) feed into it.
+Building the **full ContactConnection platform** — not releasing ContactConnection Flow as a standalone product first. Reporting and dashboards will be built **last** as all other systems (telephony, commerce, flow, custom fields, chat) feed into it.
 
 **Remaining build order:**
-1. **Hubion.Web — Agent UI** ✓ Complete (Session 16)
-2. **Hubion.Web — Flow Designer** ✓ Complete (Session 17)
-3. **Hubion.Web — Script Node Editor** ✓ Complete (Session 18)
+1. **ContactConnection.Web — Agent UI** ✓ Complete (Session 16)
+2. **ContactConnection.Web — Flow Designer** ✓ Complete (Session 17)
+3. **ContactConnection.Web — Script Node Editor** ✓ Complete (Session 18)
 4. **Chrome Extension** (web automation bridge) ← next
 4. **FreeSWITCH + Telephony** (ESL, parallel queue engine, screen pop)
-5. **Hubion.Integrations + API Builder** (no-code adapter framework)
+5. **ContactConnection.Integrations + API Builder** (no-code adapter framework)
 6. **Chat System** (tenant-scoped, enterprise features)
-7. **Hubion.HubService** (dedicated SignalR hub)
+7. **ContactConnection.HubService** (dedicated SignalR hub)
 8. **Reporting & Dashboards** (last — all data feeds in by this point)
 
 ---
@@ -316,12 +316,12 @@ chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
 
 ---
 
-### Flow Designer — Hubion.Web (Session 17)
+### Flow Designer — ContactConnection.Web (Session 17)
 
 - **Package upgrades** — Vite 6.4, Tailwind v4 (CSS `@import "tailwindcss"`, `@tailwindcss/vite` plugin, no more `tailwind.config.js` or `postcss.config.js`), React 19.1, React Router v7.6, Zustand v5.0, TypeScript 5.8; `node_modules` reduced from 172 → 125 packages
 - **`@xyflow/react` v12** installed — React Flow canvas library
 - **Backend** — `PUT /api/v1/flows/{id}` endpoint added (calls `Flow.UpdateDefinition`, bumps version); `GET /api/v1/flows/{id}` now includes `definition` field via `ToDetailResponse()`; `UpdateFlowRequest` record added
-- **`src/types/designer.ts`** — `HubionNodeType`, `NodeData`, `HubionNodeDef`, `HubionFlowDefinition`, `NODE_META` (colors/descriptions), `defaultNodeData()` factory
+- **`src/types/designer.ts`** — `ContactConnectionNodeType`, `NodeData`, `ContactConnectionNodeDef`, `ContactConnectionFlowDefinition`, `NODE_META` (colors/descriptions), `defaultNodeData()` factory
 - **`src/api/flows.ts`** — extended with `create`, `getDetail`, `updateDefinition`, `publish` for designer; `FlowSummary`/`FlowDetail` types exported
 - **Custom node components** (`src/components/designer/nodes/`):
   - `NodeShell.tsx` — shared base; colored header + ENTRY badge; target/source handles (single, dual, none)
@@ -335,8 +335,8 @@ chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
   - Edge connections via `onConnect` + `addEdge` (smoothstep)
   - Node click → properties panel; pane click → deselect
   - Delete key removes selected nodes
-  - `toHubionDef()` — converts React Flow state → Hubion JSON definition (with `_pos` for layout persistence)
-  - `fromHubionDef()` — converts Hubion JSON → React Flow state (restores node positions)
+  - `toContactConnectionDef()` — converts React Flow state → ContactConnection JSON definition (with `_pos` for layout persistence)
+  - `fromContactConnectionDef()` — converts ContactConnection JSON → React Flow state (restores node positions)
   - Save: POST (new flow) or PUT (existing flow) to API; updates URL to `/designer/{id}`
   - Publish: calls `POST /flows/{id}/publish`; status message auto-clears
   - Load existing flow via `GET /flows/{id}` on mount (parses `definition` JSON)
@@ -347,7 +347,7 @@ chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
 
 ---
 
-### Script Node Rich Text Editor — Hubion.Web (Session 18)
+### Script Node Rich Text Editor — ContactConnection.Web (Session 18)
 
 - **Bug fix** — `AdvanceSessionRequest` field renamed from `input` → `inputValue` in TypeScript to match C# record; `FlowPanel.tsx` updated to send `{ inputValue: input }`; fixes input node infinite loop
 - **`NodeDisplay.tsx`** — script content rendered via `dangerouslySetInnerHTML` with `className="script-content"` so HTML formatting displays correctly in agent UI
@@ -357,21 +357,21 @@ chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
 - **`ScriptEditorModal.tsx`** — fixed-position full-viewport modal (z-50), backdrop blur, 90vw × 85vh white container, full RichTextEditor (no expand), Done + backdrop-click close
 - **`ScriptContentEditor.tsx`** — wrapper with `modalOpen` state; when modal open: compact editor unmounted and placeholder shown; when closed: compact editor remounts from `content` prop; exported for use in NodePropertiesPanel
 - **`NodePropertiesPanel.tsx`** — script case uses `<ScriptContentEditor key={node.id}>` (key resets TipTap when switching nodes)
-- **Branding** — `hubion-favicon.svg` + `hubion-logo.svg` copied to `Hubion.Web/public/`; `index.html` favicon link; login page: 56px favicon icon centered in card header; agent shell header: 24px favicon + white "Hubion"; flow designer header: full logo (h-8) with divider separator
+- **Branding** — `hubion-favicon.svg` + `hubion-logo.svg` copied to `ContactConnection.Web/public/`; `index.html` favicon link; login page: 56px favicon icon centered in card header; agent shell header: 24px favicon + white "ContactConnection"; flow designer header: full logo (h-8) with divider separator
 - **`index.css`** — image rules for `.script-editor` and `.script-content`
 
 ---
 
 ### What Is NOT Done Yet — Other
 
-- **`Hubion.Web`** — Agent UI ✓ complete (Session 16 + 17): login, 3-panel layout, flow panel (live), softphone + chat placeholders, Flow Designer
-- **`Hubion.Web` — Flow Designer** ✓ complete (Session 17) — see below
-- **`Hubion.Web` — Script Node Editor** ✓ complete (Session 18): TipTap rich text editor with font family/size, bold/italic/underline, text color, highlight color, bullet/numbered lists, image paste + insert, popout modal editor; Hubion branding assets deployed across all pages
+- **`ContactConnection.Web`** — Agent UI ✓ complete (Session 16 + 17): login, 3-panel layout, flow panel (live), softphone + chat placeholders, Flow Designer
+- **`ContactConnection.Web` — Flow Designer** ✓ complete (Session 17) — see below
+- **`ContactConnection.Web` — Script Node Editor** ✓ complete (Session 18): TipTap rich text editor with font family/size, bold/italic/underline, text color, highlight color, bullet/numbered lists, image paste + insert, popout modal editor; ContactConnection branding assets deployed across all pages
 - **Chrome Extension** — web automation bridge not yet built ← next
 - **Chat System** — backend domain/API/SignalR not yet built (UI placeholder exists)
-- **`Hubion.HubService`** — dedicated SignalR hub project not yet created
-- **`Hubion.Integrations`** — adapter framework project not yet created
-- **Test projects** — `Hubion.Domain.Tests` ✓ (45 tests), `Hubion.Application.Tests` ✓ (20 tests); `Hubion.Infrastructure.Tests` and `Hubion.Api.Tests` not yet created
+- **`ContactConnection.HubService`** — dedicated SignalR hub project not yet created
+- **`ContactConnection.Integrations`** — adapter framework project not yet created
+- **Test projects** — `ContactConnection.Domain.Tests` ✓ (45 tests), `ContactConnection.Application.Tests` ✓ (20 tests); `ContactConnection.Infrastructure.Tests` and `ContactConnection.Api.Tests` not yet created
 
 ---
 
@@ -392,12 +392,12 @@ chat_mentions        — id, message_id, mentioned_agent_id, is_read, created_at
 ```bash
 docker compose up -d                              # start all services
 docker compose down                               # stop all services
-dotnet watch run --project Hubion.Api             # hot-reload API (localhost:5135)
-cd Hubion.Web && npm run dev                      # Vite dev server (localhost:3000), proxies /api + /hubs to :5135
-dotnet ef migrations add <Name> --context TenantDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
-dotnet ef database update --context TenantDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
-dotnet ef migrations add <Name> --context HubionDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
-dotnet ef database update --context HubionDbContext --project Hubion.Infrastructure --startup-project Hubion.Api
+dotnet watch run --project ContactConnection.Api             # hot-reload API (localhost:5135)
+cd ContactConnection.Web && npm run dev                      # Vite dev server (localhost:3000), proxies /api + /hubs to :5135
+dotnet ef migrations add <Name> --context TenantDbContext --project ContactConnection.Infrastructure --startup-project ContactConnection.Api
+dotnet ef database update --context TenantDbContext --project ContactConnection.Infrastructure --startup-project ContactConnection.Api
+dotnet ef migrations add <Name> --context ContactConnectionDbContext --project ContactConnection.Infrastructure --startup-project ContactConnection.Api
+dotnet ef database update --context ContactConnectionDbContext --project ContactConnection.Infrastructure --startup-project ContactConnection.Api
 ```
 
 pgAdmin: http://localhost:5050

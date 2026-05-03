@@ -1,4 +1,4 @@
-# Hubion Platform — Architecture Document
+# ContactConnection Platform — Architecture Document
 
 **Prepared:** March 2026  
 **Prepared by:** Call Center Solutions, LLC  
@@ -76,35 +76,35 @@ This principle is the answer to every data modeling question that arises during 
 
 ## 2. Platform Identity and Vision
 
-**Product Name:** Hubion  
+**Product Name:** ContactConnection  
 **Domain:** hubion.io  
-**Sub-product:** Hubion Flow (standalone scripting and web automation — first to market)  
+**Sub-product:** ContactConnection Flow (standalone scripting and web automation — first to market)  
 **LLC:** Call Center Solutions, LLC  
 **Beta Partner:** TMS Call Centers, Roseburg, Oregon (21-year relationship, no-pay beta, written agreement, copyright retained by LLC)
 
-### What Hubion Is
+### What ContactConnection Is
 
-Hubion is a unified multi-tenant cloud contact center platform where telephony, agent scripting, CRM, web automation, commerce, and reporting are a single coherent system — not products bolted together.
+ContactConnection is a unified multi-tenant cloud contact center platform where telephony, agent scripting, CRM, web automation, commerce, and reporting are a single coherent system — not products bolted together.
 
 It is not a CRM with telephony added. It is not a telephony platform with a CRM bolted on. It is a platform designed from the ground up around the operational reality of call centers, built by someone who has lived inside that reality for 21 years.
 
-### What Hubion Is Not
+### What ContactConnection Is Not
 
 - It is not a rewrite of CRMPro (the existing .NET 4.8 system)
 - It is not a migration project — CRMPro continues running in production throughout
 - It is not a generic CRM adapted for call centers
 - It is not built to compete on price with enterprise platforms — it competes on capability, honesty, and pricing philosophy
 
-### Hubion Flow — First to Market
+### ContactConnection Flow — First to Market
 
-Hubion Flow is a standalone extractable piece of the full platform containing:
+ContactConnection Flow is a standalone extractable piece of the full platform containing:
 
 - Visual no-code call flow designer
 - JSON flow execution engine
 - Chrome/Edge browser extension for web automation
 - Agent UI with integrated browser surface
 
-Hubion Flow generates revenue while the full platform is built. Every line of code written for Hubion Flow is code already written for Hubion. Flows built in Hubion Flow import directly into the full platform without conversion.
+ContactConnection Flow generates revenue while the full platform is built. Every line of code written for ContactConnection Flow is code already written for ContactConnection. Flows built in ContactConnection Flow import directly into the full platform without conversion.
 
 ---
 
@@ -116,7 +116,7 @@ Hubion Flow generates revenue while the full platform is built. Every line of co
 - Physical device separation — LLC development on a dedicated machine with no VPN to call center infrastructure
 - Timestamped development journal maintained
 - GitHub repository under LLC account
-- Shopify app owned by the call center (built as employee work) — Hubion's Shopify adapter is LLC IP that calls the call center's app APIs. These are distinct.
+- Shopify app owned by the call center (built as employee work) — ContactConnection's Shopify adapter is LLC IP that calls the call center's app APIs. These are distinct.
 
 ---
 
@@ -125,14 +125,14 @@ Hubion Flow generates revenue while the full platform is built. Every line of co
 **Selected approach: Strangler Fig — Parallel .NET 8 Build**
 
 - CRMPro (.NET 4.8 WinForms) continues running in production, untouched
-- Hubion (.NET 8) is built alongside it as a new product
+- ContactConnection (.NET 8) is built alongside it as a new product
 - Both systems share the same PostgreSQL instance during transition
 - Schema changes to existing tables are additive only — nothing breaks CRMPro
-- New Hubion tables and schemas are additive alongside existing schema
+- New ContactConnection tables and schemas are additive alongside existing schema
 - Agents can run both systems simultaneously during transition
-- Remote agents: Guacamole/VDI for CRMPro + local browser for Hubion, simultaneously
+- Remote agents: Guacamole/VDI for CRMPro + local browser for ContactConnection, simultaneously
 - Scripts migrate gradually via hybrid automated/manual process
-- CRMPro retires organically as Hubion script coverage reaches 100%
+- CRMPro retires organically as ContactConnection script coverage reaches 100%
 - No cutover event. No deadline pressure. No disruption.
 
 ### Why Not Upgrade CRMPro to .NET 8
@@ -141,7 +141,7 @@ CRMPro contains deprecated APIs (BinaryFormatter, etc.) that do not exist in .NE
 
 ### Existing System Reference
 
-The following CRMPro components serve as design reference for Hubion:
+The following CRMPro components serve as design reference for ContactConnection:
 
 - **Script designer** — WinForms designer host with custom controls, generates designer.vb, .resources, and code files. Reference for JSON flow schema design.
 - **Tag processor engine** — compiles dynamic script text to scriptbox.dll at design time. Reference for Variable Resolution Engine design.
@@ -160,54 +160,54 @@ The following CRMPro components serve as design reference for Hubion:
 Clean Architecture — dependency flow always inward toward Domain.
 
 ```
-/Hubion.sln
+/ContactConnection.sln
 │
 ├── /src
-│   ├── Hubion.Domain
+│   ├── ContactConnection.Domain
 │   │   └── Core domain models, value objects, enums
 │   │       No dependencies on any other project
 │   │
-│   ├── Hubion.Application
+│   ├── ContactConnection.Application
 │   │   └── Business logic, use cases, interfaces
 │   │       Depends only on Domain
 │   │
-│   ├── Hubion.Infrastructure
+│   ├── ContactConnection.Infrastructure
 │   │   └── PostgreSQL (EF Core 8 + Npgsql)
 │   │       External service clients
 │   │       Adapter implementations
 │   │       Depends on Application and Domain
 │   │
-│   ├── Hubion.Api
+│   ├── ContactConnection.Api
 │   │   └── ASP.NET Core Web API
 │   │       Controllers, middleware, SignalR hubs
 │   │       Depends on Application and Infrastructure
 │   │
-│   ├── Hubion.Web
+│   ├── ContactConnection.Web
 │   │   └── React frontend application
 │   │       Agent UI, flow designer, supervisor dashboard
 │   │       Client portal, admin surfaces
 │   │
-│   ├── Hubion.Worker
+│   ├── ContactConnection.Worker
 │   │   └── .NET 8 BackgroundService
 │   │       Export processor, fulfillment triggers
 │   │       Sensitive data wipe jobs, reporting rollups
 │   │       CDR processing
 │   │
-│   ├── Hubion.HubService
+│   ├── ContactConnection.HubService
 │   │   └── ASP.NET Core SignalR hub
 │   │       Agent real-time connections
 │   │       Flow state push, telephony events
 │   │
-│   └── Hubion.Integrations
+│   └── ContactConnection.Integrations
 │       └── Integration adapter framework
 │           All external service adapters
 │           Generic adapter runtime
 │
 ├── /tests
-│   ├── Hubion.Domain.Tests
-│   ├── Hubion.Application.Tests
-│   ├── Hubion.Infrastructure.Tests
-│   └── Hubion.Api.Tests
+│   ├── ContactConnection.Domain.Tests
+│   ├── ContactConnection.Application.Tests
+│   ├── ContactConnection.Infrastructure.Tests
+│   └── ContactConnection.Api.Tests
 │
 ├── /freeswitch
 │   ├── /conf                   FreeSWITCH config (in git)
@@ -305,7 +305,7 @@ tms-admin.hubion.io     →  LLC platform administration
 
 Wildcard SSL via Cloudflare or Let's Encrypt covers every subdomain automatically. New tenant subdomain is live immediately on provisioning — no DNS change required per tenant.
 
-Custom domain support for enterprise tenants: `crm.theircallcenter.com` CNAME to Hubion proxy, SSL managed automatically.
+Custom domain support for enterprise tenants: `crm.theircallcenter.com` CNAME to ContactConnection proxy, SSL managed automatically.
 
 ### Tenant Provisioning Flow
 
@@ -413,7 +413,7 @@ campaigns or clients?
 
 ### Overview
 
-The JSON flow engine is the most architecturally significant component of Hubion. A universal DSL (Domain Specific Language) expressed as JSON drives both agent scripting and telephony routing. The engine is a server-side interpreter — the agent UI is a thin display layer reacting to SignalR pushes.
+The JSON flow engine is the most architecturally significant component of ContactConnection. A universal DSL (Domain Specific Language) expressed as JSON drives both agent scripting and telephony routing. The engine is a server-side interpreter — the agent UI is a thin display layer reacting to SignalR pushes.
 
 The same engine powers:
 - CRM call flows (agent scripting, data capture, web automation)
@@ -620,7 +620,7 @@ public interface IVariableResolver
 
 ### Design Note
 
-This is the same concept proven across four surfaces in CRMPro (script display, export processor, API builder, web automation). Hubion formalizes it as a single shared service with consistent syntax and shared context. A user who learns the tag syntax in the flow designer already knows it in the API builder.
+This is the same concept proven across four surfaces in CRMPro (script display, export processor, API builder, web automation). ContactConnection formalizes it as a single shared service with consistent syntax and shared context. A user who learns the tag syntax in the flow designer already knows it in the API builder.
 
 ---
 
@@ -628,7 +628,7 @@ This is the same concept proven across four surfaces in CRMPro (script display, 
 
 ### Overview
 
-The most differentiated capability in the Hubion platform. A visual call flow node hands off seamlessly to external website automation — forms fill themselves out, multi-page flows complete automatically, agent guidance bubbles appear on client websites. No other CRM platform has this as an integrated, call-flow-aware, configurable capability.
+The most differentiated capability in the ContactConnection platform. A visual call flow node hands off seamlessly to external website automation — forms fill themselves out, multi-page flows complete automatically, agent guidance bubbles appear on client websites. No other CRM platform has this as an integrated, call-flow-aware, configurable capability.
 
 ### What It Does
 
@@ -784,7 +784,7 @@ Selectors stored in platform config — changing a selector after a site update 
 
 ### Overview
 
-A Chrome/Edge browser extension is a first-class Hubion platform component — not a workaround. It provides the bridge between the Hubion agent UI and external websites, enabling web automation, agent annotation, and recording masking that no pure web application can provide.
+A Chrome/Edge browser extension is a first-class ContactConnection platform component — not a workaround. It provides the bridge between the ContactConnection agent UI and external websites, enabling web automation, agent annotation, and recording masking that no pure web application can provide.
 
 ### Browser Compatibility
 
@@ -799,7 +799,7 @@ Submit to both Chrome Web Store and Microsoft Edge Add-ons Store. One codebase, 
 
 **Background Service Worker**
 - Persistent coordination layer
-- Maintains authenticated session with Hubion platform
+- Maintains authenticated session with ContactConnection platform
 - Receives injection commands via SignalR connection
 - Maintains frame registry for active tab
 - Routes commands to correct frame's content script
@@ -880,7 +880,7 @@ SIP Trunk Provider
     ↓ SIP
 FreeSWITCH Core (Docker container)
     ↓ ESL TCP socket (port 8021)
-Hubion ESL Service (.NET hosted service)
+ContactConnection ESL Service (.NET hosted service)
     ↓ events and commands
 Flow Engine + Call Record
     ↓ SignalR
@@ -1041,7 +1041,7 @@ queue_routing_rules
 
 ### Honest Reporting Philosophy
 
-Hubion reports what actually happened — not what looks best. This is a deliberate product decision and competitive differentiator.
+ContactConnection reports what actually happened — not what looks best. This is a deliberate product decision and competitive differentiator.
 
 ### The Abandon Family
 
@@ -1228,7 +1228,7 @@ Tenants submit requests for platform adapters via the in-app request form. LLC r
 
 ### Shopify Integration
 
-The call center's Shopify app (owned by call center, built as employee work) exposes REST APIs that Hubion's Shopify adapter calls. The adapter is LLC IP. The app is call center IP. Clean separation.
+The call center's Shopify app (owned by call center, built as employee work) exposes REST APIs that ContactConnection's Shopify adapter calls. The adapter is LLC IP. The app is call center IP. Clean separation.
 
 Shopify adapter actions available as flow nodes:
 - order.get, order.cancel, order.add_note, order.update_email
@@ -1244,7 +1244,7 @@ Shopify adapter actions available as flow nodes:
 
 **Integration model** — platform as data hub. Client has their own systems. Data flows via adapters.
 
-**Full platform model** — platform as system of record. Client has no external systems. Hubion handles everything end to end.
+**Full platform model** — platform as system of record. Client has no external systems. ContactConnection handles everything end to end.
 
 **Hybrid** — some built-in, some external. Configured per client via feature flags.
 
@@ -1260,7 +1260,7 @@ Central document referencing call record, interaction record, customer record, p
 
 ### Payment Flow (Full Platform Model)
 
-- Agent captures card data in Hubion CRM secure input
+- Agent captures card data in ContactConnection CRM secure input
 - Tokenized via payment gateway (Stripe primary) — raw card never written to database
 - Token stored in order record
 - Charge executed via gateway API on order confirmation
@@ -1663,7 +1663,7 @@ Configured explicitly per export job. A tenant in Pacific time can deliver a fil
 
 ### CVV / Security Code Lifecycle
 
-PCI DSS prohibits storing the security code after authorization. Hubion implements time-bounded storage with guaranteed destruction:
+PCI DSS prohibits storing the security code after authorization. ContactConnection implements time-bounded storage with guaranteed destruction:
 
 ```sql
 call_records
@@ -1715,7 +1715,7 @@ Azure Front Door or Nginx reverse proxy
 Subdomain tenant routing
     ↓
 Azure App Service (auto-scaling)
-Hubion API instances (stateless, N instances)
+ContactConnection API instances (stateless, N instances)
     ↓
 ├── Azure Database for PostgreSQL Flexible Server
 │   Primary (writes) + Read replica (reporting)
@@ -1736,7 +1736,7 @@ Hubion API instances (stateless, N instances)
 │   Tiered storage (hot → cool → archive)
 │
 └── Azure Container Instances
-    Hubion Worker (background jobs)
+    ContactConnection Worker (background jobs)
     Scales to zero when not needed
 
 FreeSWITCH (VPS or dedicated — SIP requirements)
@@ -1777,7 +1777,7 @@ Scales with usage. Bill grows with revenue — not ahead of it.
 
 ### Docker Desktop
 
-The entire Hubion stack runs locally via Docker Desktop on Windows (WSL2 backend). `docker compose up` starts everything. `docker compose down` stops everything cleanly. Database persists via Docker volumes between sessions.
+The entire ContactConnection stack runs locally via Docker Desktop on Windows (WSL2 backend). `docker compose up` starts everything. `docker compose down` stops everything cleanly. Database persists via Docker volumes between sessions.
 
 ### Dev Machine Specs (Current)
 
@@ -1790,12 +1790,12 @@ The entire Hubion stack runs locally via Docker Desktop on Windows (WSL2 backend
 ```yaml
 services:
   api:
-    build: ./src/Hubion.Api
+    build: ./src/ContactConnection.Api
     ports: ["5000:8080"]
     depends_on: [postgres, redis, freeswitch]
 
   worker:
-    build: ./src/Hubion.Worker
+    build: ./src/ContactConnection.Worker
     depends_on: [postgres, redis]
 
   postgres:
@@ -1901,7 +1901,7 @@ The one exception to flat pricing: tenants requiring dedicated infrastructure (c
 
 ### What No Other Platform Combines
 
-| Capability | Hubion | NICE InContact | Five9 | Genesys |
+| Capability | ContactConnection | NICE InContact | Five9 | Genesys |
 |---|---|---|---|---|
 | Call-flow-aware web automation | ✓ | ✗ | ✗ | ✗ |
 | Agent annotation on external sites | ✓ | ✗ | ✗ | ✗ |
@@ -1927,7 +1927,7 @@ The one exception to flat pricing: tenants requiring dedicated infrastructure (c
 For call centers running Windows-based CRM clients:
 
 - WinForms CRM → requires Windows workstations or VDIs
-- Hubion web platform → runs in any browser
+- ContactConnection web platform → runs in any browser
 
 Results for a typical call center:
 - Proxmox VDI stack → eliminated entirely
@@ -1937,7 +1937,7 @@ Results for a typical call center:
 - Remote agent hardware provisioning → simplified or eliminated
 - Power consumption → reduced (Chromebook: ~10W vs desktop: 65-150W)
 
-The ROI conversation with a CFO: infrastructure savings often cover the Hubion subscription within the first quarter.
+The ROI conversation with a CFO: infrastructure savings often cover the ContactConnection subscription within the first quarter.
 
 ---
 
@@ -2053,7 +2053,7 @@ Each session has specific inputs identified. Bring the listed materials to maxim
 
 ## Document Maintenance
 
-This document is the authoritative architectural reference for all Hubion development. It should be updated when:
+This document is the authoritative architectural reference for all ContactConnection development. It should be updated when:
 
 - A significant architectural decision is made or changed
 - A new major component is designed
@@ -2065,5 +2065,5 @@ Every Claude Code session should begin with: *"Please read ARCHITECTURE.md befor
 ---
 
 *Call Center Solutions, LLC — Confidential*  
-*Hubion Platform Architecture v1.0*  
+*ContactConnection Platform Architecture v1.0*  
 *All platform IP owned by Call Center Solutions, LLC*

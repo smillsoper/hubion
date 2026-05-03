@@ -1,6 +1,6 @@
-# Hubion Development Log
+# ContactConnection Development Log
 
-**Project:** Hubion Platform
+**Project:** ContactConnection Platform
 **LLC:** Call Center Solutions, LLC
 **Repository:** https://github.com/smillsoper/hubion
 
@@ -42,12 +42,12 @@
 
 - Reviewed ARCHITECTURE.md in full; established authoritative reference for all future sessions
 - Assessed initial project scaffold state against Session 1 goals from ARCHITECTURE.md
-- Created `Hubion.Domain` project (Clean Architecture domain layer — replaces incorrectly named `Hubion.Core`)
-- Created `Hubion.Application` project (Clean Architecture business logic / use cases layer)
+- Created `ContactConnection.Domain` project (Clean Architecture domain layer — replaces incorrectly named `ContactConnection.Core`)
+- Created `ContactConnection.Application` project (Clean Architecture business logic / use cases layer)
 - Established correct dependency chain: `Domain ← Application ← Infrastructure ← Api`
-- Wired all project references in `.csproj` files and `Hubion.slnx`
+- Wired all project references in `.csproj` files and `ContactConnection.slnx`
 - Removed `Class1.cs` placeholders from all projects
-- Initialized .NET User Secrets for `Hubion.Api` — connection string removed from `appsettings.Development.json`
+- Initialized .NET User Secrets for `ContactConnection.Api` — connection string removed from `appsettings.Development.json`
 - Cleaned `Program.cs` of WeatherForecast boilerplate
 - Expanded `docker-compose.yml` to full local dev stack — Redis, Nginx, pgAdmin, MailHog (FreeSWITCH commented out until telephony session)
 - Created `nginx/local.conf` — wildcard subdomain routing with SignalR WebSocket support
@@ -128,7 +128,7 @@
 
 ### Accomplished
 
-- Added `Hubion.Infrastructure` NuGet packages: `BCrypt.Net-Next`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `System.IdentityModel.Tokens.Jwt`
+- Added `ContactConnection.Infrastructure` NuGet packages: `BCrypt.Net-Next`, `Microsoft.AspNetCore.Authentication.JwtBearer`, `System.IdentityModel.Tokens.Jwt`
 - Built `Agent` domain entity — tenant-scoped, stored in tenant schema
   - Factory method `Agent.Create(tenantId, firstName, lastName, email, passwordHash, role)`
   - `RecordLogin()` updates `LastLoginAt`
@@ -185,7 +185,7 @@
 
 ### Key Findings from CRMPro Analysis
 
-**Tag syntax:** `<*...*>` delimiters enclosing **executable VB.NET code** (not field references). Hubion will use `{{namespace.field}}` declarative syntax — a deliberate upgrade for safety and no-code ownership.
+**Tag syntax:** `<*...*>` delimiters enclosing **executable VB.NET code** (not field references). ContactConnection will use `{{namespace.field}}` declarative syntax — a deliberate upgrade for safety and no-code ownership.
 
 **Script structure:** `AccordionControl` is the top-level container; each `AccordionItem` panel = one flow step (node). Navigation is linear by default; branching is procedural VB.NET in button click handlers setting `SelectedIndex`.
 
@@ -203,13 +203,13 @@
 - `set_variable` ← PostCallCode response mapping after API call
 - `end` ← final accordion panel with wrap-up button
 
-**API call control (WebServiceControl):** Every field (URL, method, headers, body, auth) is template-based. Post-call VB.NET code block processes the response. Hubion maps this to `response_map` + `set_variable` — no code, fully declarative.
+**API call control (WebServiceControl):** Every field (URL, method, headers, body, auth) is template-based. Post-call VB.NET code block processes the response. ContactConnection maps this to `response_map` + `set_variable` — no code, fully declarative.
 
-**Branching:** No declarative condition syntax in CRMPro — all embedded procedural code. Hubion introduces a proper `branch` node with explicit condition expressions.
+**Branching:** No declarative condition syntax in CRMPro — all embedded procedural code. ContactConnection introduces a proper `branch` node with explicit condition expressions.
 
-### CRMPro → Hubion Design Translation
+### CRMPro → ContactConnection Design Translation
 
-| CRMPro | Hubion |
+| CRMPro | ContactConnection |
 |---|---|
 | `<*VBCode*>` (executable) | `{{namespace.field}}` (declarative) |
 | Button click If/Then → `SelectedIndex = N` | `branch` node with declared condition + transitions |
@@ -230,7 +230,7 @@
 4. `FlowExecutionContext` (VariableStore, ExecutionHistory, LockedFields, CommitmentEvents)
 5. `INodeHandler` + core handlers: `script`, `input`, `branch`, `set_variable`, `end`
 6. `FlowEngine` service — StartFlow, AdvanceNode, ProcessInput; Redis active state + PostgreSQL on completion
-7. `FlowHub` (SignalR in Hubion.Api) — pushes node state to agent UI
+7. `FlowHub` (SignalR in ContactConnection.Api) — pushes node state to agent UI
 8. Endpoints: `POST /flows`, `GET /flows/{id}`, `POST /flow-sessions`, `POST /flow-sessions/{id}/advance`
 
 → All of the above were completed in Session 5.
@@ -300,7 +300,7 @@
 
 ### Pending for Next Session Start
 - End-to-end test of flow engine (token limit hit before testing could begin):
-  1. Start API: `dotnet watch run --project Hubion.Api`
+  1. Start API: `dotnet watch run --project ContactConnection.Api`
   2. Login to get JWT: `POST /api/v1/auth/login` with `admin@tms.hubion.local`
   3. Create a simple test flow: `POST /api/v1/flows` with a 3-node definition (script → input → end)
   4. Publish it: `POST /api/v1/flows/{id}/publish`
@@ -422,7 +422,7 @@ After building, identified 6 structural gaps between the current implementation 
 | Subscription lifecycle for AutoShip | Medium | Session 12 |
 | Category/attribute system (for large catalog clients) | Low (DR), High (catalog) | Session 13 |
 
-Root cause: the original CRMPro system was a broker between the call center and the client's external OMS/fulfillment platform. These gaps are what elevate Hubion beyond that role into a full-stack contact center commerce platform.
+Root cause: the original CRMPro system was a broker between the call center and the client's external OMS/fulfillment platform. These gaps are what elevate ContactConnection beyond that role into a full-stack contact center commerce platform.
 
 ---
 
@@ -651,7 +651,7 @@ Gap 4: Order entity — post-call fulfillment artifact with full lifecycle, inve
 **Build:** 0 warnings, 0 errors ✓
 
 ### Pending for Session 12
-- **Gap 5: Subscription lifecycle** — `Subscription` entity; recurring schedule; `Hubion.Worker` background service project scaffolded
+- **Gap 5: Subscription lifecycle** — `Subscription` entity; recurring schedule; `ContactConnection.Worker` background service project scaffolded
 
 ---
 
@@ -664,7 +664,7 @@ Gap 4: Order entity — post-call fulfillment artifact with full lifecycle, inve
 
 ### Accomplished
 
-Gap 5: Subscription lifecycle + Hubion.Worker scaffolding — AutoShip enrollment on order commit, full subscription lifecycle management, and a Worker service that processes due subscriptions on a recurring schedule.
+Gap 5: Subscription lifecycle + ContactConnection.Worker scaffolding — AutoShip enrollment on order commit, full subscription lifecycle management, and a Worker service that processes due subscriptions on a recurring schedule.
 
 **Domain**
 - `Order.CallRecordId` made nullable — autoship renewal orders have no originating call record; `CreateFromSubscription` factory added alongside `CreateFromCart`
@@ -691,10 +691,10 @@ Gap 5: Subscription lifecycle + Hubion.Worker scaffolding — AutoShip enrollmen
 - `POST /api/v1/subscriptions/{id}/resume` — resume (guards: cancelled)
 - `POST /api/v1/subscriptions/{id}/cancel` — cancel (idempotent)
 
-**Hubion.Worker project (scaffolded)**
-- `Hubion.Worker.csproj` — `Microsoft.NET.Sdk.Worker`; references `Hubion.Application` + `Hubion.Infrastructure`; added to `Hubion.slnx`
+**ContactConnection.Worker project (scaffolded)**
+- `ContactConnection.Worker.csproj` — `Microsoft.NET.Sdk.Worker`; references `ContactConnection.Application` + `ContactConnection.Infrastructure`; added to `ContactConnection.slnx`
 - `Program.cs` — `AddInfrastructure` + `AddHostedService<SubscriptionProcessingService>`
-- `SubscriptionProcessingService : BackgroundService` — runs every hour; loads all active tenants from `HubionDbContext`; for each tenant creates a scoped DI scope and pre-populates `TenantContext.Current` so all scoped services (repositories, inventory) route to the correct schema without HTTP middleware; calls `ISubscriptionOrderCreator.CreateRenewalOrderAsync` + `Subscription.RecordShipment()` for each due subscription; per-subscription error isolation (one failure doesn't stop others)
+- `SubscriptionProcessingService : BackgroundService` — runs every hour; loads all active tenants from `ContactConnectionDbContext`; for each tenant creates a scoped DI scope and pre-populates `TenantContext.Current` so all scoped services (repositories, inventory) route to the correct schema without HTTP middleware; calls `ISubscriptionOrderCreator.CreateRenewalOrderAsync` + `Subscription.RecordShipment()` for each due subscription; per-subscription error isolation (one failure doesn't stop others)
 
 **Database**
 - Migration `AddSubscriptions` — creates `subscriptions` table + alters `orders.call_record_id` to nullable
@@ -721,7 +721,7 @@ Gap 5: Subscription lifecycle + Hubion.Worker scaffolding — AutoShip enrollmen
 
 2. **`RefreshStatus()` not stamping timestamps** — `ShippedAt`/`DeliveredAt` on the `Order` row were null after status transitioned to `shipped`/`delivered`. Fixed by adding `ShippedAt ??= DateTimeOffset.UtcNow` and `DeliveredAt ??= DateTimeOffset.UtcNow` inside the relevant `RefreshStatus()` transitions.
 
-3. **Worker EF Core version conflict** — `Microsoft.Extensions.Hosting 10.0.6` pulled EF Core abstractions `10.0.4`, conflicting with Infrastructure's `10.0.5`. Fixed by pinning `<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />` explicitly in `Hubion.Worker.csproj`.
+3. **Worker EF Core version conflict** — `Microsoft.Extensions.Hosting 10.0.6` pulled EF Core abstractions `10.0.4`, conflicting with Infrastructure's `10.0.5`. Fixed by pinning `<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />` explicitly in `ContactConnection.Worker.csproj`.
 
 **Build:** 0 errors ✓
 
@@ -810,7 +810,7 @@ All 6 gaps from Session 7's analysis are now closed:
 | 9 | Tax service integration | ✓ |
 | 10 | Inventory reservation | ✓ |
 | 11 | Order entity | ✓ |
-| 12 | Subscription lifecycle + Hubion.Worker | ✓ |
+| 12 | Subscription lifecycle + ContactConnection.Worker | ✓ |
 | 13 | Category/attribute system | ✓ |
 
 ---
@@ -825,23 +825,23 @@ All 6 gaps from Session 7's analysis are now closed:
 
 ### Goal
 
-Create `Hubion.Domain.Tests` and `Hubion.Application.Tests` — the first two test projects per ARCHITECTURE.md spec. Cover domain entity lifecycle logic and PricingService business logic with xUnit tests.
+Create `ContactConnection.Domain.Tests` and `ContactConnection.Application.Tests` — the first two test projects per ARCHITECTURE.md spec. Cover domain entity lifecycle logic and PricingService business logic with xUnit tests.
 
 ### What Was Built
 
-**`tests/Hubion.Domain.Tests/`**
-- `Hubion.Domain.Tests.csproj` — net10.0, xUnit 2.9.3, references Hubion.Domain
+**`tests/ContactConnection.Domain.Tests/`**
+- `ContactConnection.Domain.Tests.csproj` — net10.0, xUnit 2.9.3, references ContactConnection.Domain
 - `Domain/ProductInventoryTests.cs` — 13 tests: `CanAddToCart` for all 4 InventoryStatus values; `Reserve`, `Release`, `Confirm` behavior with/without `DecrementOnOrder`
 - `Domain/OrderLineLifecycleTests.cs` — 6 tests: `FromCartItem` snapshot, `Ship`, `MarkDelivered`, `Cancel` state transitions; `CreateFromSubscription` snapshot
 - `Domain/OrderLifecycleTests.cs` — 9 tests: `Cancel`; `RefreshStatus` for all status transitions (all-pending, partial-ship, all-shipped, all-delivered, delivered+cancelled, shipped+cancelled, all-cancelled, guard when order already cancelled); `CreateFromSubscription` null CallRecordId
 - `Domain/SubscriptionLifecycleTests.cs` — 12 tests: `IsDue` (active+future, active+past via reflection on backing field, paused, cancelled); `RecordShipment` count/date/advance/re-not-due; `Pause`, `Resume`, `Cancel`, initial state
 
-**`tests/Hubion.Application.Tests/`**
-- `Hubion.Application.Tests.csproj` — net10.0, xUnit + Moq, references Domain + Application + Infrastructure
+**`tests/ContactConnection.Application.Tests/`**
+- `ContactConnection.Application.Tests.csproj` — net10.0, xUnit + Moq, references Domain + Application + Infrastructure
 - `Commerce/PricingServiceResolvePaymentsTests.cs` — 8 tests: base schedule fallback; QPB threshold met/missed; QPB best-break-wins; MixMatch group threshold met/missed; MixMatch over QPB priority; MixMatch different-code exclusion
 - `Commerce/PricingServiceCalculateTotalsTests.cs` — 12 tests: empty cart; subtotal/shipping; tax on taxable items only; shipping-exempt exclusion; weight-tier override; subtotal-tier override; weight-over-subtotal precedence; multi-payment breakdown; shipping not-split; shipping split; single-payment breakdown; RoundSplit remainder in payment 1
 
-**Solution:** `Hubion.slnx` updated with both test project paths
+**Solution:** `ContactConnection.slnx` updated with both test project paths
 
 **Test results:** 65/65 passed, 0 failures
 
@@ -886,10 +886,10 @@ Build the custom field type system per ARCHITECTURE.md §20 — typed campaign/c
 - `DataTypeConfiguration` — `public.data_types` table; stable well-known seed IDs (10000000-…-0001 through -0008); `AggregationFunctions` JSONB with value converter
 - `CustomFieldDefinitionConfiguration` — `custom_field_definitions` table; 3 indexes including unique `(tenant_id, field_name, client_id, campaign_id)`
 - `CustomFieldValueConfiguration` — `custom_field_values` table; FK cascade from definitions; unique `(call_record_id, definition_id)` index
-- `DataTypeRepository` — reads from `HubionDbContext` (public schema)
+- `DataTypeRepository` — reads from `ContactConnectionDbContext` (public schema)
 - `CustomFieldDefinitionRepository`, `CustomFieldValueRepository` — lazy `ScopedTenantDbContextFactory` pattern
 - `CustomFieldService` — scope resolution (groups by `FieldName`, picks lowest `ScopeRank`); typed value parsing via `ApplyTypedValue`; snapshot rebuild via `RefreshSnapshotAsync` (loads all current values → composes JSON dict → updates call_record)
-- `HubionDbContext` — added `DataTypes` DbSet + `DataTypeConfiguration`
+- `ContactConnectionDbContext` — added `DataTypes` DbSet + `DataTypeConfiguration`
 - `TenantDbContext` — added `CustomFieldDefinitions`, `CustomFieldValues` DbSets + configurations
 - `ServiceCollectionExtensions` — registered `ICustomFieldDefinitionRepository`, `ICustomFieldValueRepository`, `IDataTypeRepository`, `ICustomFieldService`
 
@@ -904,7 +904,7 @@ Build the custom field type system per ARCHITECTURE.md §20 — typed campaign/c
 - `DELETE /api/v1/call-records/{id}/custom-fields/{definitionId}` — remove value; 204
 
 **Database**
-- Migration `AddDataTypes` (HubionDbContext) — creates `public.data_types` with all 8 seed rows ✓
+- Migration `AddDataTypes` (ContactConnectionDbContext) — creates `public.data_types` with all 8 seed rows ✓
 - Migration `AddCustomFields` (TenantDbContext) — creates `custom_field_definitions` + `custom_field_values` with all indexes ✓
 - Both applied to target databases ✓
 
@@ -931,14 +931,14 @@ Build the custom field type system per ARCHITECTURE.md §20 — typed campaign/c
 
 ### Key Design Decisions
 
-- `DataType` lives in `HubionDbContext` (public schema) — platform reference, seeded once; no cross-schema FK from tenant tables (use string `DataTypeName` as the link, validated at domain layer)
+- `DataType` lives in `ContactConnectionDbContext` (public schema) — platform reference, seeded once; no cross-schema FK from tenant tables (use string `DataTypeName` as the link, validated at domain layer)
 - `ScopeRank` on `CustomFieldDefinition` is a computed property (ignored by EF) — drives in-memory scope resolution in `CustomFieldService.ResolveMostSpecific()`
 - `ClearTypedColumns()` called before every `Set*()` — ensures only one typed column ever populated per row
 - Snapshot refreshed on every `SetValueAsync` and `DeleteValueAsync` — `call_records.custom_fields` always reflects current state without joins on read
 
 ---
 
-## Session 16 — Agent UI Scaffold (Hubion.Web)
+## Session 16 — Agent UI Scaffold (ContactConnection.Web)
 
 **Date:** 2026-04-24
 **Start:** 7:12 AM PDT
@@ -948,18 +948,18 @@ Build the custom field type system per ARCHITECTURE.md §20 — typed campaign/c
 
 ### Goal
 
-Strategic direction confirmed: build the full Hubion platform — not releasing Hubion Flow as a standalone product first. Reporting and dashboards are deferred until all other systems (telephony, commerce, flow, custom fields, chat) are complete.
+Strategic direction confirmed: build the full ContactConnection platform — not releasing ContactConnection Flow as a standalone product first. Reporting and dashboards are deferred until all other systems (telephony, commerce, flow, custom fields, chat) are complete.
 
-Scaffold `Hubion.Web` — the React-based agent UI — with a 3-panel layout and a live flow panel wired to the flow engine backend. Plan and document the tenant-scoped enterprise chat system (placeholder in UI for now).
+Scaffold `ContactConnection.Web` — the React-based agent UI — with a 3-panel layout and a live flow panel wired to the flow engine backend. Plan and document the tenant-scoped enterprise chat system (placeholder in UI for now).
 
 ### Strategic Decisions Made
 
-- **Full platform build order confirmed** — Hubion.Web Agent UI → Flow Designer → Chrome Extension → FreeSWITCH/Telephony → Hubion.Integrations → Chat → Hubion.HubService → Reporting & Dashboards
+- **Full platform build order confirmed** — ContactConnection.Web Agent UI → Flow Designer → Chrome Extension → FreeSWITCH/Telephony → ContactConnection.Integrations → Chat → ContactConnection.HubService → Reporting & Dashboards
 - **Chat System architecture added to CLAUDE.md** — tenant-scoped, Slack/Pumble-level features: public/private channels, DMs, threads, @mentions, emoji reactions, presence; 5-table data model; `ChatHub : Hub<IChatHubClient>`; Redis for presence
 
 ### What Was Built
 
-**`Hubion.Web/` — React + Vite + TypeScript SPA**
+**`ContactConnection.Web/` — React + Vite + TypeScript SPA**
 
 Config files:
 - `package.json` — Vite 4, React 18, Tailwind CSS v3, React Router v6, Zustand v4, `@microsoft/signalr` v8 (pinned to Node 16-compatible versions; Node 24.15.0 installed in background — upgrade packages in Session 17)
@@ -986,7 +986,7 @@ Pages:
 - `src/pages/AgentPage.tsx` — thin wrapper that renders `<AgentShell />`
 
 Layout and panels:
-- `src/components/AgentShell.tsx` — 3-panel grid: 240px left softphone | flex center flow | 300px right chat; top bar with "Hubion" brand + sign-out button
+- `src/components/AgentShell.tsx` — 3-panel grid: 240px left softphone | flex center flow | 300px right chat; top bar with "ContactConnection" brand + sign-out button
 - `src/components/SoftphonePanel.tsx` — placeholder with phone icon + "Coming soon"
 - `src/components/ChatPanel.tsx` — placeholder with chat icon + "Channels, DMs & threads / Coming soon"
 
@@ -1018,11 +1018,11 @@ Node.js v16.17.0 was the active version when the session started — incompatibl
 
 ### Goal
 
-Upgrade `Hubion.Web` packages to current versions (Node 24 now active) and build the Flow Designer — the visual no-code canvas built on React Flow.
+Upgrade `ContactConnection.Web` packages to current versions (Node 24 now active) and build the Flow Designer — the visual no-code canvas built on React Flow.
 
 ### Accomplished
 
-**Package upgrades — Hubion.Web**
+**Package upgrades — ContactConnection.Web**
 - Node 24.15.0 confirmed active (installed via winget in Session 16 background)
 - Vite 4 → 6.4.2; Tailwind CSS v3 (PostCSS) → v4 (`@tailwindcss/vite` plugin, `@import "tailwindcss"` in CSS, no `tailwind.config.js` or `postcss.config.js` or `autoprefixer`)
 - React 18.3 → 19.1; React Router v6 → v7.6; Zustand v4 → v5; TypeScript 5.6 → 5.8
@@ -1036,9 +1036,9 @@ Upgrade `Hubion.Web` packages to current versions (Node 24 now active) and build
 - `UpdateFlowRequest` record added
 
 **Flow Designer — src/types/designer.ts**
-- `HubionNodeType` union type (script, input, branch, set_variable, api_call, end)
+- `ContactConnectionNodeType` union type (script, input, branch, set_variable, api_call, end)
 - `NodeData` — flat record with all optional fields per node type (compatible with React Flow's generic `Node<T>`)
-- `HubionNodeDef`, `HubionFlowDefinition` — match the JSON flow schema from ARCHITECTURE.md §9
+- `ContactConnectionNodeDef`, `ContactConnectionFlowDefinition` — match the JSON flow schema from ARCHITECTURE.md §9
 - `NODE_META` — color, label, description, handle count per type (single/dual/none)
 - `defaultNodeData(type)` — factory returning sensible defaults for each type
 
@@ -1076,8 +1076,8 @@ Upgrade `Hubion.Web` packages to current versions (Node 24 now active) and build
 - Edge connections via `onConnect` + `addEdge` (smoothstep type)
 - Node click → opens properties panel; pane click → deselects
 - Delete key removes selected nodes + connected edges
-- `toHubionDef()` — React Flow state → Hubion JSON; stores `_pos` in each node for layout persistence
-- `fromHubionDef()` — Hubion JSON → React Flow state; restores positions from `_pos`
+- `toContactConnectionDef()` — React Flow state → ContactConnection JSON; stores `_pos` in each node for layout persistence
+- `fromContactConnectionDef()` — ContactConnection JSON → React Flow state; restores positions from `_pos`
 - Save: POST (new flow → redirects to `/designer/{id}`) or PUT (existing flow); status message auto-clears after 3s
 - Publish: `POST /flows/{id}/publish`; status message auto-clears after 4s
 - Load: fetches `GET /flows/{id}` on mount, parses `definition` JSON, restores full canvas state
@@ -1104,7 +1104,7 @@ Upgrade `Hubion.Web` packages to current versions (Node 24 now active) and build
 
 ### Goal
 
-Live test the stack, diagnose and fix the input node loop bug, then build the Script node rich text editing experience (TipTap) and place Hubion branding assets across the app.
+Live test the stack, diagnose and fix the input node loop bug, then build the Script node rich text editing experience (TipTap) and place ContactConnection branding assets across the app.
 
 ### Accomplished
 
@@ -1131,11 +1131,11 @@ Live test the stack, diagnose and fix the input node loop bug, then build the Sc
 - `ScriptContentEditor.tsx` — wrapper holding `modalOpen` state; when modal open: compact editor unmounted, dashed placeholder shown so panel keeps shape; when closed: compact editor remounts from latest `content` prop
 - `NodePropertiesPanel.tsx` — script case replaced `RichTextEditor` with `<ScriptContentEditor key={node.id} />` (key resets TipTap on node switch)
 
-**Hubion branding**
-- `Images/hubion-favicon.svg` and `Images/hubion-logo.svg` copied to `Hubion.Web/public/`
+**ContactConnection branding**
+- `Images/hubion-favicon.svg` and `Images/hubion-logo.svg` copied to `ContactConnection.Web/public/`
 - `index.html` — `<link rel="icon" href="/hubion-favicon.svg" type="image/svg+xml">` added
-- `LoginPage.tsx` — favicon icon (56px, centered) replaces plain "Hubion" h1; dark card background makes the blue gradient favicon pop
-- `AgentShell.tsx` — favicon icon (24px) + "Hubion" white text replaces plain indigo text span in top bar
+- `LoginPage.tsx` — favicon icon (56px, centered) replaces plain "ContactConnection" h1; dark card background makes the blue gradient favicon pop
+- `AgentShell.tsx` — favicon icon (24px) + "ContactConnection" white text replaces plain indigo text span in top bar
 - `FlowDesignerPage.tsx` — full logo SVG (h-8, 32px tall) added to left of top bar before the Back button; vertical divider separates logo from nav controls; light bar background is the design target for the full wordmark logo
 
 **Build:** 0 TypeScript errors ✓
