@@ -28,6 +28,7 @@
 | 16 | 2026-04-24 | 7:12 AM PDT | 7:58 AM PDT | 46 min | ~704 min |
 | 17 | 2026-04-26 | 6:45 AM PDT | 6:58 AM PDT | 13 min | ~717 min |
 | 18 | 2026-04-26 | 7:01 AM PDT | 7:59 AM PDT | 58 min | ~775 min |
+| 19 | 2026-05-03 | 7:49 AM PDT | 9:11 AM PDT | 82 min | ~857 min |
 
 ---
 
@@ -1143,3 +1144,63 @@ Live test the stack, diagnose and fix the input node loop bug, then build the Sc
 ### Pending for Session 19
 - Chrome Extension (web automation bridge) — Manifest V3, background service worker, content scripts, frame registry, annotation system
 - Continue working through remaining Flow Designer node types (Input, Branch, Set Variable, API Call, End)
+
+---
+
+## Session 19 — Variable Panel, Input Node Improvements, Flows Management Page
+
+**Date:** 2026-05-03
+**Start:** 7:49 AM PDT
+**End:** 9:11 AM PDT
+**Duration:** 82 minutes
+**Cumulative Total:** ~857 min
+
+### Goal
+
+Live test the stack after the Hubion → ContactConnection rebrand, fix a build warning, add a variable reference panel to the Script Content Editor, fix the Input node canvas styling, add per-option exit handles and an output variable field to Input nodes, and build a Flows management page so saved flows can be listed, published, and opened for editing.
+
+### Accomplished
+
+**EF Core version conflict fix (0 warnings, 0 errors)**
+- Root cause: Npgsql 10.0.1 transitively pulls EF Core 10.0.4, conflicting with the project's direct references to 10.0.5 — MSB3277 warnings in 4 projects.
+- `Directory.Build.props` (solution root) — created; `PackageReference Update` approach documented but does not override transitive packages.
+- Fix: added explicit `<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.5" />` and `...Relational...` to `ContactConnection.Worker.csproj` and `ContactConnection.Application.Tests.csproj`.
+- Result: 0 warnings, 0 errors across all projects.
+
+**Variable reference panel in Script Content Editor modal**
+- `src/components/designer/VariablePanel.tsx` (new) — collapsible namespace tree; click any token to insert it at cursor; `call_record` and `caller` namespaces expanded by default; `input`, `api`, `flow` tagged with amber "dynamic" badge; all 7 flow engine namespaces covered with their full field lists.
+- `RichTextEditor.tsx` — wrapped with `forwardRef<RichTextEditorHandle>`; `useImperativeHandle` exposes `insert(text)` → `editor.chain().focus().insertContent(text).run()`; `RichTextEditorHandle` interface exported.
+- `ScriptEditorModal.tsx` — two-column layout: editor (flex-1) | variable panel (w-52, bg-gray-50, border-l); modal widened from `max-w-4xl` to `max-w-5xl`; variable panel calls `editorRef.current?.insert(token)` on click.
+
+**Input node black border fix**
+- Root cause: custom node type key `'input'` collides with React Flow's built-in `input` node type; React Flow applies `.react-flow__node-input { border: 1px solid #1a192b }` default CSS automatically.
+- Fix: added `.react-flow__node-input { border: none !important; ... }` override plus selection/focus outline suppressions in `src/index.css`.
+
+**Per-option exit handles on select Input nodes**
+- `src/types/designer.ts` — added `'custom'` to handles union type; input node handles changed from `'single'` to `'custom'`; `outputVariable?: string` added to `NodeData` and `ContactConnectionNodeDef`; `outputVariable: ''` in `defaultNodeData`.
+- `InputNode.tsx` — renders one green source Handle per option (evenly spaced by `left` percentage) when `fieldType === 'select'`; single grey handle for all other field types; shows `→ {{flow.varname}}` in emerald text when `outputVariable` is set.
+- `NodePropertiesPanel.tsx` — "Output variable" text input field added to input node case; live hint text shows `Available downstream as {{flow.varname}}` when filled.
+
+**Output variable auto-store in flow engine backend**
+- `InputNodeHandler.cs` — after storing `ctx.Inputs[nodeId] = agentInput`, reads `outputVariable` from node definition; if non-empty, writes `ctx.FlowVars[outputVar] = agentInput` — eliminates the need for a separate Set Variable node to capture input values.
+
+**Flows management page**
+- `src/pages/FlowsPage.tsx` (new) — light-themed list page; header with CC logo, Back to agent, New Flow button; table: Name, Type, Status badge (Published emerald / Draft amber), Version, Updated date, Edit + inline Publish actions.
+- `src/api/flows.ts` — added `created_at`/`updated_at` to `FlowSummary`; added `listAll()` → `GET /api/v1/flows?all=true`.
+- `ContactConnection.Application/Interfaces/Repositories/IFlowRepository.cs` — added `GetAllByTenantAsync`.
+- `ContactConnection.Infrastructure/Repositories/FlowRepository.cs` — implemented `GetAllByTenantAsync` (no `IsActive` filter, ordered by `UpdatedAt` desc).
+- `ContactConnection.Api/Endpoints/FlowsEndpoints.cs` — list endpoint accepts `[FromQuery] bool all`; routes to `GetAllByTenantAsync` (drafts + published) or `GetActiveByTenantAsync` (published only).
+- `App.tsx` — `/flows` route added with `RequireAuth`.
+- `AgentShell.tsx` — top bar link changed from "Flow Designer" → `/designer` to "Flows" → `/flows`.
+
+### Bugs Found and Fixed
+
+1. **Docker volume mismatch after rebrand** — Directory rename changed Docker Compose project name from `hubion` to `contactconnection`; new empty volumes were created. Old `hubion_hubion_pgdata` volumes still exist. Fixed by running `docker compose -p hubion up -d` to reattach to original volumes.
+2. **Save showed success but flow not in agent dropdown** — Flows saved as draft; `GET /api/v1/flows` only returns published flows. Not a bug — user needed to click Publish. Documented two-step lifecycle.
+3. **No way to open existing flows** — Flow Designer had no load/open UI. Fixed by building `FlowsPage.tsx` with Edit buttons linking to `/designer/:id`.
+
+### Branch Condition Analysis (checkbox values)
+
+Confirmed: `NodeDisplay.tsx` always emits string `"true"` or `"false"` for checkbox inputs. `VariableResolver.EvaluateCondition` uses `StringComparison.OrdinalIgnoreCase` for `==`, so `{{flow.varName}} == true` resolves correctly. The actual bug in the user's test flow was a wrong variable reference (`{{flow.node_id}}` instead of the correct output variable name).
+
+**Build:** 0 warnings, 0 errors ✓

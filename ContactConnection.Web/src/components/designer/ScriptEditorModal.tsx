@@ -1,4 +1,6 @@
-import RichTextEditor from './RichTextEditor'
+import { useRef } from 'react'
+import RichTextEditor, { type RichTextEditorHandle } from './RichTextEditor'
+import VariablePanel from './VariablePanel'
 
 interface Props {
   value: string
@@ -7,6 +9,8 @@ interface Props {
 }
 
 export default function ScriptEditorModal({ value, onChange, onClose }: Props) {
+  const editorRef = useRef<RichTextEditorHandle>(null)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       {/* Backdrop */}
@@ -14,7 +18,7 @@ export default function ScriptEditorModal({ value, onChange, onClose }: Props) {
 
       {/* Modal container */}
       <div
-        className="relative z-10 bg-white rounded-xl shadow-2xl flex flex-col w-[90vw] max-w-4xl"
+        className="relative z-10 bg-white rounded-xl shadow-2xl flex flex-col w-[90vw] max-w-5xl"
         style={{ maxHeight: '85vh' }}
       >
         {/* Header */}
@@ -29,9 +33,17 @@ export default function ScriptEditorModal({ value, onChange, onClose }: Props) {
           </button>
         </div>
 
-        {/* Body — scrollable if content is tall */}
-        <div className="flex-1 overflow-y-auto p-5">
-          <RichTextEditor value={value} onChange={onChange} />
+        {/* Body — editor + variable panel side by side */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Editor */}
+          <div className="flex-1 overflow-y-auto p-5">
+            <RichTextEditor ref={editorRef} value={value} onChange={onChange} />
+          </div>
+
+          {/* Variable panel */}
+          <div className="w-52 shrink-0 border-l border-gray-200 overflow-y-auto bg-gray-50">
+            <VariablePanel onInsert={(token) => editorRef.current?.insert(token)} />
+          </div>
         </div>
 
         {/* Footer */}

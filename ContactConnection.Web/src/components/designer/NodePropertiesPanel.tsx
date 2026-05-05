@@ -95,6 +95,20 @@ export default function NodePropertiesPanel({
               />
               Required
             </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-600">Output variable</label>
+              <input
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400"
+                value={(data.outputVariable as string) ?? ''}
+                placeholder="call_type"
+                onChange={(e) => onUpdate(node.id, { outputVariable: e.target.value })}
+              />
+              <p className="text-[10px] text-gray-400">
+                {(data.outputVariable as string)
+                  ? <>Available downstream as <span className="font-mono text-emerald-600">{'{{flow.' + (data.outputVariable as string) + '}}'}</span></>
+                  : 'Saves the response as a flow variable'}
+              </p>
+            </div>
           </>
         )
 

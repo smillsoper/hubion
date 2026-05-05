@@ -21,6 +21,11 @@ public class FlowRepository : IFlowRepository
                 .OrderBy(f => f.Name)
                 .ToListAsync(ct);
 
+    public Task<List<Flow>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default) =>
+        Db.Flows.Where(f => f.TenantId == tenantId)
+                .OrderByDescending(f => f.UpdatedAt)
+                .ToListAsync(ct);
+
     public async Task AddAsync(Flow flow, CancellationToken ct = default) =>
         await Db.Flows.AddAsync(flow, ct);
 

@@ -31,3 +31,25 @@ html, body, #root {
 .script-content li { margin: 0.1rem 0; }
 .script-content mark { border-radius: 2px; padding: 0 2px; }
 .script-content img { max-width: 100%; height: auto; border-radius: 4px; margin: 0.25rem 0; }
+
+/* ── React Flow — suppress built-in node type default borders ────────── */
+/* Our type key "input" collides with RF's built-in input node styling    */
+.react-flow__node-input {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* ── React Flow — suppress default selection outline + box-shadow ────── */
+.react-flow__node.selected,
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none !important;
+}
+.react-flow__node.selected > div,
+.react-flow__node:focus > div,
+.react-flow__node:focus-visible > div {
+  box-shadow: none !important;
+}

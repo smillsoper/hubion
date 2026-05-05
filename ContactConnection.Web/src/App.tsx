@@ -3,6 +3,7 @@ import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/LoginPage'
 import AgentPage from './pages/AgentPage'
 import FlowDesignerPage from './pages/FlowDesignerPage'
+import FlowsPage from './pages/FlowsPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -35,6 +36,14 @@ export default function App() {
           element={
             <RequireAuth>
               <FlowDesignerPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/flows"
+          element={
+            <RequireAuth>
+              <FlowsPage />
             </RequireAuth>
           }
         />

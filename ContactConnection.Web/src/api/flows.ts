@@ -8,6 +8,8 @@ export interface FlowSummary {
   flow_type: string
   is_active: boolean
   version: number
+  created_at: string
+  updated_at: string
 }
 
 export interface FlowDetail extends FlowSummary {
@@ -15,8 +17,11 @@ export interface FlowDetail extends FlowSummary {
 }
 
 export const flowsApi = {
-  // Agent panel
+  // Agent panel — published flows only
   list: () => api.get<FlowSummary[]>('/api/v1/flows'),
+
+  // Flows management page — all flows including drafts
+  listAll: () => api.get<FlowSummary[]>('/api/v1/flows?all=true'),
 
   startSession: (req: StartSessionRequest) =>
     api.post<FlowNodeState>('/api/v1/flow-sessions', req),

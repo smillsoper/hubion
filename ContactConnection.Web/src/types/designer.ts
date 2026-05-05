@@ -15,6 +15,7 @@ export interface NodeData extends Record<string, unknown> {
   fieldType?: string
   required?: boolean
   options?: string
+  outputVariable?: string
   // branch
   condition?: string
   // set_variable
@@ -36,6 +37,7 @@ export interface ContactConnectionNodeDef {
   fieldType?: string
   required?: boolean
   options?: string
+  outputVariable?: string
   condition?: string
   assignments?: { variable: string; value: string }[]
   method?: string
@@ -57,7 +59,7 @@ export interface ContactConnectionFlowDefinition {
 
 export const NODE_META: Record<
   ContactConnectionNodeType,
-  { label: string; color: string; description: string; handles: 'single' | 'dual' | 'none' }
+  { label: string; color: string; description: string; handles: 'single' | 'dual' | 'none' | 'custom' }
 > = {
   script: {
     label: 'Script',
@@ -69,7 +71,7 @@ export const NODE_META: Record<
     label: 'Input',
     color: '#10b981',
     description: 'Capture data from the agent',
-    handles: 'single',
+    handles: 'custom',
   },
   branch: {
     label: 'Branch',
@@ -102,7 +104,7 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
     case 'script':
       return { label: 'New Script', content: '' }
     case 'input':
-      return { label: 'New Input', fieldType: 'text', required: false, options: '' }
+      return { label: 'New Input', fieldType: 'text', required: false, options: '', outputVariable: '' }
     case 'branch':
       return { label: 'New Branch', condition: '' }
     case 'set_variable':

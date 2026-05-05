@@ -15,10 +15,10 @@ export default function AgentShell() {
         <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="h-7" />
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/designer')}
+            onClick={() => navigate('/flows')}
             className="text-xs text-gray-400 hover:text-indigo-300 transition-colors"
           >
-            Flow Designer
+            Flows
           </button>
           <button
             onClick={clearAuth}

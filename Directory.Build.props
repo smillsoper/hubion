@@ -1,0 +1,9 @@
+<Project>
+  <!-- Pin EF Core sub-packages to 10.0.5 to override the 10.0.4 transitive pull from Npgsql 10.0.1 -->
+  <ItemGroup>
+    <PackageReference Update="Microsoft.EntityFrameworkCore"             Version="10.0.5" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Abstractions" Version="10.0.5" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Analyzers"   Version="10.0.5" />
+    <PackageReference Update="Microsoft.EntityFrameworkCore.Relational"  Version="10.0.5" />
+  </ItemGroup>
+</Project>

@@ -99,15 +99,19 @@ public static class FlowsEndpoints
             return Results.Ok(flow.ToResponse());
         });
 
-        // List active flows for the tenant
+        // List flows for the tenant — ?all=true returns drafts too, otherwise only active
         group.MapGet("/", async (
+            [FromQuery] bool all,
             IFlowRepository flows,
             TenantContext tenantContext,
             CancellationToken ct) =>
         {
             if (tenantContext.Current is null) return Results.Unauthorized();
 
-            var list = await flows.GetActiveByTenantAsync(tenantContext.Current.Id, ct);
+            var list = all
+                ? await flows.GetAllByTenantAsync(tenantContext.Current.Id, ct)
+                : await flows.GetActiveByTenantAsync(tenantContext.Current.Id, ct);
+
             return Results.Ok(list.Select(f => f.ToResponse()));
         });
     }

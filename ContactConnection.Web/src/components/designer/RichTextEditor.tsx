@@ -7,7 +7,11 @@ import Highlight from '@tiptap/extension-highlight'
 import Underline from '@tiptap/extension-underline'
 import FontFamily from '@tiptap/extension-font-family'
 import Image from '@tiptap/extension-image'
-import { useState, useRef } from 'react'
+import { useState, useRef, forwardRef, useImperativeHandle } from 'react'
+
+export interface RichTextEditorHandle {
+  insert: (text: string) => void
+}
 
 // ── Custom FontSize extension ──────────────────────────────────────────────
 
@@ -171,195 +175,205 @@ interface RichTextEditorProps {
   onExpand?: () => void
 }
 
-export default function RichTextEditor({ value, onChange, onExpand }: RichTextEditorProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
+  function RichTextEditor({ value, onChange, onExpand }, ref) {
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      Underline,
-      FontFamily,
-      FontSize,
-      Image.configure({ inline: false, allowBase64: true }),
-    ],
-    content: value,
-    onUpdate: ({ editor }) => onChange(editor.getHTML()),
-    editorProps: {
-      handlePaste(view, event) {
-        const items = event.clipboardData?.items
-        if (!items) return false
-        for (const item of Array.from(items)) {
-          if (!item.type.startsWith('image/')) continue
-          const file = item.getAsFile()
-          if (!file) continue
-          const reader = new FileReader()
-          reader.onload = () => {
-            view.dispatch(
-              view.state.tr.replaceSelectionWith(
-                view.state.schema.nodes['image'].create({ src: reader.result as string }),
-              ),
-            )
+    const editor = useEditor({
+      extensions: [
+        StarterKit,
+        TextStyle,
+        Color,
+        Highlight.configure({ multicolor: true }),
+        Underline,
+        FontFamily,
+        FontSize,
+        Image.configure({ inline: false, allowBase64: true }),
+      ],
+      content: value,
+      onUpdate: ({ editor }) => onChange(editor.getHTML()),
+      editorProps: {
+        handlePaste(view, event) {
+          const items = event.clipboardData?.items
+          if (!items) return false
+          for (const item of Array.from(items)) {
+            if (!item.type.startsWith('image/')) continue
+            const file = item.getAsFile()
+            if (!file) continue
+            const reader = new FileReader()
+            reader.onload = () => {
+              view.dispatch(
+                view.state.tr.replaceSelectionWith(
+                  view.state.schema.nodes['image'].create({ src: reader.result as string }),
+                ),
+              )
+            }
+            reader.readAsDataURL(file)
+            event.preventDefault()
+            return true
           }
-          reader.readAsDataURL(file)
-          event.preventDefault()
-          return true
-        }
-        return false
+          return false
+        },
       },
-    },
-  })
+    })
 
-  if (!editor) return null
+    useImperativeHandle(ref, () => ({
+      insert: (text: string) => {
+        editor?.chain().focus().insertContent(text).run()
+      },
+    }), [editor])
 
-  const activeTextColor   = editor.getAttributes('textStyle').color      ?? ''
-  const activeHighlight   = editor.getAttributes('highlight').color      ?? ''
-  const activeFontFamily  = editor.getAttributes('textStyle').fontFamily  ?? ''
-  const activeFontSize    = editor.getAttributes('textStyle').fontSize    ?? ''
+    if (!editor) return null
 
-  function applyFontFamily(v: string) {
-    v
-      ? editor.chain().focus().setFontFamily(v).run()
-      : editor.chain().focus().unsetFontFamily().run()
-  }
+    const activeTextColor   = editor.getAttributes('textStyle').color      ?? ''
+    const activeHighlight   = editor.getAttributes('highlight').color      ?? ''
+    const activeFontFamily  = editor.getAttributes('textStyle').fontFamily  ?? ''
+    const activeFontSize    = editor.getAttributes('textStyle').fontSize    ?? ''
 
-  function applyFontSize(v: string) {
-    v
-      ? (editor.chain().focus() as any).setFontSize(v).run()
-      : (editor.chain().focus() as any).unsetFontSize().run()
-  }
-
-  function handleImageFile(file: File) {
-    const reader = new FileReader()
-    reader.onload = () => {
-      editor.chain().focus().setImage({ src: reader.result as string }).run()
+    function applyFontFamily(v: string) {
+      v
+        ? editor.chain().focus().setFontFamily(v).run()
+        : editor.chain().focus().unsetFontFamily().run()
     }
-    reader.readAsDataURL(file)
+
+    function applyFontSize(v: string) {
+      v
+        ? (editor.chain().focus() as any).setFontSize(v).run()
+        : (editor.chain().focus() as any).unsetFontSize().run()
+    }
+
+    function handleImageFile(file: File) {
+      const reader = new FileReader()
+      reader.onload = () => {
+        editor.chain().focus().setImage({ src: reader.result as string }).run()
+      }
+      reader.readAsDataURL(file)
+    }
+
+    return (
+      <div className="border border-gray-300 rounded overflow-hidden focus-within:border-blue-400 transition-colors">
+        {/* Toolbar */}
+        <div className="flex items-center gap-0.5 px-1.5 py-1 bg-gray-50 border-b border-gray-200 flex-wrap">
+
+          {/* Font family */}
+          <select
+            value={activeFontFamily}
+            onChange={(e) => applyFontFamily(e.target.value)}
+            className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
+            style={{ maxWidth: 92 }}
+          >
+            {FONT_FAMILIES.map((f) => (
+              <option key={f.label} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+
+          {/* Font size */}
+          <select
+            value={activeFontSize}
+            onChange={(e) => applyFontSize(e.target.value)}
+            className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
+            style={{ maxWidth: 58 }}
+          >
+            <option value="">Size</option>
+            {FONT_SIZES.map((s) => (
+              <option key={s} value={s}>{s.replace('px', '')}</option>
+            ))}
+          </select>
+
+          <Divider />
+
+          {/* Bold / Italic / Underline */}
+          <Btn active={editor.isActive('bold')}      onClick={() => editor.chain().focus().toggleBold().run()}      title="Bold">
+            <span className="font-bold">B</span>
+          </Btn>
+          <Btn active={editor.isActive('italic')}    onClick={() => editor.chain().focus().toggleItalic().run()}    title="Italic">
+            <span className="italic">I</span>
+          </Btn>
+          <Btn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
+            <span className="underline">U</span>
+          </Btn>
+
+          <Divider />
+
+          {/* Color pickers */}
+          <ColorPicker
+            label="Text color"
+            colors={TEXT_COLORS}
+            current={activeTextColor}
+            onSelect={(c) => c
+              ? editor.chain().focus().setColor(c).run()
+              : editor.chain().focus().unsetColor().run()}
+          />
+          <ColorPicker
+            label="Highlight"
+            colors={HIGHLIGHT_COLORS}
+            current={activeHighlight}
+            onSelect={(c) => c
+              ? editor.chain().focus().setHighlight({ color: c }).run()
+              : editor.chain().focus().unsetHighlight().run()}
+          />
+
+          <Divider />
+
+          {/* Lists */}
+          <Btn active={editor.isActive('bulletList')}  onClick={() => editor.chain().focus().toggleBulletList().run()}  title="Bullet list">•</Btn>
+          <Btn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered list">1.</Btn>
+
+          <Divider />
+
+          {/* Insert image */}
+          <Btn onClick={() => fileInputRef.current?.click()} title="Insert image">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </Btn>
+
+          <Divider />
+
+          {/* Clear formatting */}
+          <Btn onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting">✕</Btn>
+
+          {/* Expand button — right-aligned */}
+          {onExpand && (
+            <>
+              <div className="flex-1" />
+              <Btn onClick={onExpand} title="Expand editor">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </Btn>
+            </>
+          )}
+        </div>
+
+        {/* Editor surface */}
+        <EditorContent
+          editor={editor}
+          className="script-editor px-3 py-2 text-sm text-gray-800 min-h-28 focus:outline-none"
+        />
+
+        {/* Helper */}
+        <div className="px-2 pb-1.5 text-[10px] text-gray-400">
+          Use <span className="font-mono">{'{{namespace.field}}'}</span> for dynamic values — formatting applies to surrounding text. Images can be pasted directly.
+        </div>
+
+        {/* Hidden file picker for image insert */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleImageFile(file)
+            e.target.value = ''
+          }}
+        />
+      </div>
+    )
   }
+)
 
-  return (
-    <div className="border border-gray-300 rounded overflow-hidden focus-within:border-blue-400 transition-colors">
-      {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-gray-50 border-b border-gray-200 flex-wrap">
-
-        {/* Font family */}
-        <select
-          value={activeFontFamily}
-          onChange={(e) => applyFontFamily(e.target.value)}
-          className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
-          style={{ maxWidth: 92 }}
-        >
-          {FONT_FAMILIES.map((f) => (
-            <option key={f.label} value={f.value}>{f.label}</option>
-          ))}
-        </select>
-
-        {/* Font size */}
-        <select
-          value={activeFontSize}
-          onChange={(e) => applyFontSize(e.target.value)}
-          className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
-          style={{ maxWidth: 58 }}
-        >
-          <option value="">Size</option>
-          {FONT_SIZES.map((s) => (
-            <option key={s} value={s}>{s.replace('px', '')}</option>
-          ))}
-        </select>
-
-        <Divider />
-
-        {/* Bold / Italic / Underline */}
-        <Btn active={editor.isActive('bold')}      onClick={() => editor.chain().focus().toggleBold().run()}      title="Bold">
-          <span className="font-bold">B</span>
-        </Btn>
-        <Btn active={editor.isActive('italic')}    onClick={() => editor.chain().focus().toggleItalic().run()}    title="Italic">
-          <span className="italic">I</span>
-        </Btn>
-        <Btn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
-          <span className="underline">U</span>
-        </Btn>
-
-        <Divider />
-
-        {/* Color pickers */}
-        <ColorPicker
-          label="Text color"
-          colors={TEXT_COLORS}
-          current={activeTextColor}
-          onSelect={(c) => c
-            ? editor.chain().focus().setColor(c).run()
-            : editor.chain().focus().unsetColor().run()}
-        />
-        <ColorPicker
-          label="Highlight"
-          colors={HIGHLIGHT_COLORS}
-          current={activeHighlight}
-          onSelect={(c) => c
-            ? editor.chain().focus().setHighlight({ color: c }).run()
-            : editor.chain().focus().unsetHighlight().run()}
-        />
-
-        <Divider />
-
-        {/* Lists */}
-        <Btn active={editor.isActive('bulletList')}  onClick={() => editor.chain().focus().toggleBulletList().run()}  title="Bullet list">•</Btn>
-        <Btn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered list">1.</Btn>
-
-        <Divider />
-
-        {/* Insert image */}
-        <Btn onClick={() => fileInputRef.current?.click()} title="Insert image">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </Btn>
-
-        <Divider />
-
-        {/* Clear formatting */}
-        <Btn onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting">✕</Btn>
-
-        {/* Expand button — right-aligned */}
-        {onExpand && (
-          <>
-            <div className="flex-1" />
-            <Btn onClick={onExpand} title="Expand editor">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              </svg>
-            </Btn>
-          </>
-        )}
-      </div>
-
-      {/* Editor surface */}
-      <EditorContent
-        editor={editor}
-        className="script-editor px-3 py-2 text-sm text-gray-800 min-h-28 focus:outline-none"
-      />
-
-      {/* Helper */}
-      <div className="px-2 pb-1.5 text-[10px] text-gray-400">
-        Use <span className="font-mono">{'{{namespace.field}}'}</span> for dynamic values — formatting applies to surrounding text. Images can be pasted directly.
-      </div>
-
-      {/* Hidden file picker for image insert */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) handleImageFile(file)
-          e.target.value = ''
-        }}
-      />
-    </div>
-  )
-}
+export default RichTextEditor

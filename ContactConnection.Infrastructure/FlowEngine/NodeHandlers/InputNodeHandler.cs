@@ -41,6 +41,11 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
 
             ctx.Inputs[ctx.CurrentNodeId] = agentInput;
 
+            // Auto-store into flow variables if outputVariable is set
+            var outputVar = Str(node, "outputVariable")?.Trim();
+            if (!string.IsNullOrEmpty(outputVar))
+                ctx.FlowVars[outputVar] = agentInput;
+
             var next = Transition(node, agentTransition) ?? Transition(node, "default");
             AppendHistory(ctx, node, agentInput, next);
 
