@@ -27,7 +27,7 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
         string? agentInput, string agentTransition, CancellationToken ct = default)
     {
         var varCtx    = ctx.ToVariableContext();
-        var inputType = Str(node, "input_type") ?? "text";
+        var inputType = Str(node, "input_type") ?? Str(node, "fieldType") ?? "text";
         var prompt    = Resolver.Resolve(Str(node, "prompt") ?? string.Empty, varCtx);
 
         // If agent has submitted a value, store it and advance
