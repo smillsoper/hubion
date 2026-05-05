@@ -15,7 +15,6 @@ export default function FlowPanel() {
   const { token, tenantSubdomain } = useAuthStore()
   const [state, setState] = useState<PanelState>({ phase: 'idle' })
   const [advancing, setAdvancing] = useState(false)
-  const [scriptContext, setScriptContext] = useState<string | null>(null)
   const [flows, setFlows] = useState<{ id: string; name: string }[]>([])
   const [selectedFlowId, setSelectedFlowId] = useState('')
   const [hub, setHub] = useState<signalR.HubConnection | null>(null)
@@ -53,29 +52,12 @@ export default function FlowPanel() {
     }
   }, [hub, state])
 
-  // Auto-advance through script nodes; save script content to show alongside the next node
-  async function processNode(node: FlowNodeState) {
-    if (node.nodeType === 'script') {
-      setScriptContext(node.content ?? null)
-      setState({ phase: 'loading' })
-      try {
-        const next = await flowsApi.advance(node.sessionId, {})
-        await processNode(next)
-      } catch (e) {
-        setState({ phase: 'error', message: String(e) })
-      }
-    } else {
-      setState({ phase: 'running', node })
-    }
-  }
-
   async function startSession() {
     if (!selectedFlowId) return
-    setScriptContext(null)
     setState({ phase: 'loading' })
     try {
       const node = await flowsApi.startSession({ flowId: selectedFlowId })
-      await processNode(node)
+      setState({ phase: 'running', node })
     } catch (e) {
       setState({ phase: 'error', message: String(e) })
     }
@@ -85,11 +67,9 @@ export default function FlowPanel() {
     async (input?: string) => {
       if (state.phase !== 'running') return
       setAdvancing(true)
-      // Clear script context when agent submits any input
-      if (input !== undefined) setScriptContext(null)
       try {
         const next = await flowsApi.advance(state.node.sessionId, { inputValue: input })
-        await processNode(next)
+        setState({ phase: 'running', node: next })
       } catch (e) {
         setState({ phase: 'error', message: String(e) })
       } finally {
@@ -125,7 +105,7 @@ export default function FlowPanel() {
 
         {state.phase === 'running' && (
           <button
-            onClick={() => { setState({ phase: 'idle' }); setScriptContext(null) }}
+            onClick={() => setState({ phase: 'idle' })}
             className="text-gray-400 hover:text-white text-sm transition-colors ml-auto"
           >
             End session
@@ -156,7 +136,6 @@ export default function FlowPanel() {
         {state.phase === 'running' && (
           <NodeDisplay
             node={state.node}
-            scriptContext={scriptContext}
             onAdvance={advance}
             advancing={advancing}
           />

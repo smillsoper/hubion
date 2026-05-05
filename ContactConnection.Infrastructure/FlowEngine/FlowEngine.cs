@@ -129,6 +129,7 @@ public class FlowEngine : IFlowEngine
     {
         const int MaxAutoAdvance = 50; // safety cap — prevents infinite loops in bad flow definitions
         var steps = 0;
+        string? scriptContext = null; // accumulated script content to attach to the next stopping node
 
         while (true)
         {
@@ -144,31 +145,45 @@ public class FlowEngine : IFlowEngine
 
             var result = await handler.ExecuteAsync(node, ctx, agentInput, transition, ct);
 
-            // Terminal node or node waiting for input — return state as-is
+            // Terminal node or node waiting for input — return state, attaching any preceding script content
             if (result.NextNodeId is null || result.State.IsTerminal)
+            {
+                result.State.ScriptContext = scriptContext;
                 return result.State;
+            }
 
             // Auto-advancing node (branch, set_variable) — loop immediately without waiting for agent
             if (AutoAdvanceTypes.Contains(nodeType) && ++steps < MaxAutoAdvance)
             {
-                nodeId      = result.NextNodeId;
-                agentInput  = null;
-                transition  = "default";
+                nodeId     = result.NextNodeId;
+                agentInput = null;
+                transition = "default";
                 continue;
             }
 
-            // StartAsync: show the first interactive node to the agent — stop here.
-            // ctx.CurrentNodeId is already set to nodeId at the top of the loop.
+            // Script node — capture its content and advance through it automatically.
+            // The content will be attached to the next node that stops (input/end).
+            if (nodeType == "script")
+            {
+                scriptContext = result.State.Content;
+                nodeId        = result.NextNodeId;
+                agentInput    = null;
+                transition    = "default";
+                continue;
+            }
+
+            // StartAsync / first-display: stop here and show this node to the agent.
             if (isStart)
+            {
+                result.State.ScriptContext = scriptContext;
                 return result.State;
+            }
 
             // AdvanceAsync: agent acted on this node — advance past it to the next node.
-            // The loop will process the next node; if it's an input waiting for data it'll
-            // return immediately with NextNodeId=null, leaving the cursor there.
             nodeId     = result.NextNodeId;
             agentInput = null;
             transition = "default";
-            isStart    = false; // already false, but keep explicit
+            isStart    = false;
         }
     }
 

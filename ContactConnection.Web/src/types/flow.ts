@@ -14,6 +14,7 @@ export interface FlowNodeState {
   condition?: string
   isTerminal: boolean
   lockedFields: string[]
+  scriptContext?: string
 }
 
 export interface StartSessionRequest {
