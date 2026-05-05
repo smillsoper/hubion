@@ -29,6 +29,8 @@ public class FlowRepository : IFlowRepository
     public async Task AddAsync(Flow flow, CancellationToken ct = default) =>
         await Db.Flows.AddAsync(flow, ct);
 
+    public void Delete(Flow flow) => Db.Flows.Remove(flow);
+
     public Task SaveChangesAsync(CancellationToken ct = default) =>
         Db.SaveChangesAsync(ct);
 }

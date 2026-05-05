@@ -46,4 +46,6 @@ export const flowsApi = {
     api.put<FlowDetail>(`/api/v1/flows/${id}`, { definition: JSON.stringify(definition) }),
 
   publish: (id: string) => api.post<FlowDetail>(`/api/v1/flows/${id}/publish`),
+
+  delete: (id: string) => api.delete<void>(`/api/v1/flows/${id}`),
 }

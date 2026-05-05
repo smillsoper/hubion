@@ -8,5 +8,6 @@ public interface IFlowRepository
     Task<List<Flow>> GetActiveByTenantAsync(Guid tenantId, CancellationToken ct = default);
     Task<List<Flow>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default);
     Task AddAsync(Flow flow, CancellationToken ct = default);
+    void Delete(Flow flow);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

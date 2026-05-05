@@ -98,6 +98,25 @@ public static class FlowsEndpoints
             return Results.Ok(flow.ToResponse());
         });
 
+        // Delete a flow (draft or published)
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            IFlowRepository flows,
+            TenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Current is null) return Results.Unauthorized();
+
+            var flow = await flows.GetByIdAsync(id, ct);
+            if (flow is null || flow.TenantId != tenantContext.Current.Id)
+                return Results.NotFound();
+
+            flows.Delete(flow);
+            await flows.SaveChangesAsync(ct);
+
+            return Results.NoContent();
+        });
+
         // List active flows for the tenant (agent panel — published only)
         group.MapGet("/", async (
             IFlowRepository flows,

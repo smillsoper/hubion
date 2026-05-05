@@ -8,6 +8,7 @@ export default function FlowsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -31,6 +32,17 @@ export default function FlowsPage() {
       await load()
     } finally {
       setPublishingId(null)
+    }
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return
+    setDeletingId(id)
+    try {
+      await flowsApi.delete(id)
+      await load()
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -134,6 +146,13 @@ export default function FlowsPage() {
                           className="text-xs text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 rounded px-2.5 py-1 transition-colors"
                         >
                           Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(flow.id, flow.name)}
+                          disabled={deletingId === flow.id}
+                          className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-300 rounded px-2.5 py-1 disabled:opacity-50 transition-colors"
+                        >
+                          {deletingId === flow.id ? 'Deleting…' : 'Delete'}
                         </button>
                       </div>
                     </td>
