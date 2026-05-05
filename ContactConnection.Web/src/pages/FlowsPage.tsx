@@ -6,13 +6,17 @@ export default function FlowsPage() {
   const navigate = useNavigate()
   const [flows, setFlows] = useState<FlowSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [publishingId, setPublishingId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
+    setError(null)
     try {
       const data = await flowsApi.listAll()
       setFlows(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load flows')
     } finally {
       setLoading(false)
     }
@@ -64,6 +68,12 @@ export default function FlowsPage() {
         {loading ? (
           <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
             Loading…
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-40 gap-3">
+            <p className="text-red-500 text-sm font-medium">Error loading flows</p>
+            <p className="text-red-400 text-xs font-mono">{error}</p>
+            <button onClick={load} className="text-sm text-blue-600 hover:underline">Retry</button>
           </div>
         ) : flows.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 gap-3">
