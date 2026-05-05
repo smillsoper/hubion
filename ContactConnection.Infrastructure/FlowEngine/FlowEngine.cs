@@ -82,9 +82,13 @@ public class FlowEngine : IFlowEngine
         await _sessions.SaveChangesAsync(ct);
 
         var ctx   = BuildContext(session, definition, request);
-        await SaveToRedis(ctx, ct);
-
         var state = await AdvanceInternalAsync(ctx, entryNodeId, agentInput: null, transition: "default", isStart: true, ct);
+
+        // Save ctx AFTER advance so CurrentNodeId reflects where the engine stopped,
+        // not the entry node — same pattern as AdvanceAsync.
+        if (!state.IsTerminal)
+            await SaveToRedis(ctx, ct);
+
         await _notifier.PushNodeStateAsync(session.Id, state, ct);
         return state;
     }
