@@ -1,7 +1,6 @@
 using ContactConnection.Application.Interfaces.Repositories;
 using ContactConnection.Application.Services;
 using ContactConnection.Domain.Entities;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ContactConnection.Api.Endpoints;
 
@@ -101,14 +100,14 @@ public static class FlowsEndpoints
 
         // List flows for the tenant — ?all=true returns drafts too, otherwise only active
         group.MapGet("/", async (
-            [FromQuery] bool all,
+            bool? all,
             IFlowRepository flows,
             TenantContext tenantContext,
             CancellationToken ct) =>
         {
             if (tenantContext.Current is null) return Results.Unauthorized();
 
-            var list = all
+            var list = all == true
                 ? await flows.GetAllByTenantAsync(tenantContext.Current.Id, ct)
                 : await flows.GetActiveByTenantAsync(tenantContext.Current.Id, ct);
 

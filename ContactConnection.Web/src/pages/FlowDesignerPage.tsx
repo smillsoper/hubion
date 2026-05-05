@@ -274,7 +274,7 @@ function DesignerCanvas({
         <div className="w-px h-5 bg-gray-200 shrink-0" />
         <button
           className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
-          onClick={() => navigate('/agent')}
+          onClick={() => navigate('/flows')}
         >
           ← Back
         </button>
