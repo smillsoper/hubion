@@ -46,7 +46,10 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
             if (!string.IsNullOrEmpty(outputVar))
                 ctx.FlowVars[outputVar] = agentInput;
 
-            var next = Transition(node, agentTransition) ?? Transition(node, "default");
+            // Select nodes use the chosen value as the transition key (one handle per option in the designer).
+            // Fall back to agentTransition then "default" for all other input types.
+            var effectiveTransition = inputType == "select" ? agentInput : agentTransition;
+            var next = Transition(node, effectiveTransition) ?? Transition(node, agentTransition) ?? Transition(node, "default");
             AppendHistory(ctx, node, agentInput, next);
 
             var advancedState = BuildState(ctx, node, resolvedContent: prompt,
