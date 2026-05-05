@@ -98,19 +98,25 @@ public static class FlowsEndpoints
             return Results.Ok(flow.ToResponse());
         });
 
-        // List flows for the tenant — ?all=true returns drafts too, otherwise only active
+        // List active flows for the tenant (agent panel — published only)
         group.MapGet("/", async (
-            bool? all,
             IFlowRepository flows,
             TenantContext tenantContext,
             CancellationToken ct) =>
         {
             if (tenantContext.Current is null) return Results.Unauthorized();
+            var list = await flows.GetActiveByTenantAsync(tenantContext.Current.Id, ct);
+            return Results.Ok(list.Select(f => f.ToResponse()));
+        });
 
-            var list = all == true
-                ? await flows.GetAllByTenantAsync(tenantContext.Current.Id, ct)
-                : await flows.GetActiveByTenantAsync(tenantContext.Current.Id, ct);
-
+        // List all flows for the tenant including drafts (management page)
+        group.MapGet("/all", async (
+            IFlowRepository flows,
+            TenantContext tenantContext,
+            CancellationToken ct) =>
+        {
+            if (tenantContext.Current is null) return Results.Unauthorized();
+            var list = await flows.GetAllByTenantAsync(tenantContext.Current.Id, ct);
             return Results.Ok(list.Select(f => f.ToResponse()));
         });
     }

@@ -21,7 +21,7 @@ export const flowsApi = {
   list: () => api.get<FlowSummary[]>('/api/v1/flows'),
 
   // Flows management page — all flows including drafts
-  listAll: () => api.get<FlowSummary[]>('/api/v1/flows?all=true'),
+  listAll: () => api.get<FlowSummary[]>('/api/v1/flows/all'),
 
   startSession: (req: StartSessionRequest) =>
     api.post<FlowNodeState>('/api/v1/flow-sessions', req),
