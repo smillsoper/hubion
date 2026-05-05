@@ -30,13 +30,15 @@ export interface NodeData extends Record<string, unknown> {
   status?: string
 }
 
+export interface FlowOption { value: string; label: string }
+
 export interface ContactConnectionNodeDef {
   type: ContactConnectionNodeType
   label: string
   content?: string
   fieldType?: string
   required?: boolean
-  options?: string
+  options?: FlowOption[]
   outputVariable?: string
   condition?: string
   assignments?: { variable: string; value: string }[]

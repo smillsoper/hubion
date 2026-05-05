@@ -26,7 +26,7 @@ import SetVariableNode from '../components/designer/nodes/SetVariableNode'
 import ApiCallNode from '../components/designer/nodes/ApiCallNode'
 import EndNode from '../components/designer/nodes/EndNode'
 
-import type { NodeData, ContactConnectionNodeType, ContactConnectionFlowDefinition } from '../types/designer'
+import type { NodeData, ContactConnectionNodeType, ContactConnectionFlowDefinition, FlowOption } from '../types/designer'
 import { defaultNodeData } from '../types/designer'
 
 const nodeTypes = {
@@ -53,9 +53,17 @@ function toContactConnectionDef(
     for (const e of outgoing) {
       transitions[e.sourceHandle ?? 'default'] = e.target
     }
-    const { isEntry: _entry, ...rest } = n.data
+    const { isEntry: _entry, options: optionsStr, ...rest } = n.data
+
+    // Convert comma-separated options string → [{value, label}] array for the engine
+    const options: FlowOption[] | undefined =
+      n.type === 'input' && typeof optionsStr === 'string' && optionsStr.trim()
+        ? (optionsStr as string).split(',').map((o) => o.trim()).filter(Boolean).map((o) => ({ value: o, label: o }))
+        : undefined
+
     hubionNodes[n.id] = {
       ...rest,
+      ...(options ? { options } : {}),
       type: (n.type ?? 'script') as ContactConnectionNodeType,
       label: n.data.label as string,
       _pos: n.position,
@@ -80,12 +88,18 @@ function fromContactConnectionDef(def: ContactConnectionFlowDefinition): {
   let x = 100
 
   for (const [id, nodeDef] of Object.entries(def.nodes)) {
-    const { type, label, _pos, transitions, ...rest } = nodeDef
+    const { type, label, _pos, transitions, options: optionsDef, ...rest } = nodeDef
+
+    // Convert [{value, label}] array back to comma-separated string for the designer textarea
+    const options: string | undefined = Array.isArray(optionsDef)
+      ? (optionsDef as FlowOption[]).map((o) => o.label).join(', ')
+      : undefined
+
     nodes.push({
       id,
       type,
       position: _pos ?? { x, y: 100 },
-      data: { label, isEntry: id === def.entry_node, ...rest },
+      data: { label, isEntry: id === def.entry_node, ...(options !== undefined ? { options } : {}), ...rest },
     })
     x += 260
 

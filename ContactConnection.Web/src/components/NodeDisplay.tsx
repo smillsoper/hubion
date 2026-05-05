@@ -3,11 +3,12 @@ import type { FlowNodeState } from '../types/flow'
 
 interface Props {
   node: FlowNodeState
+  scriptContext?: string | null
   onAdvance: (input?: string) => void
   advancing: boolean
 }
 
-export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
+export default function NodeDisplay({ node, scriptContext, onAdvance, advancing }: Props) {
   const [inputValue, setInputValue] = useState('')
 
   function handleSubmit(e: FormEvent) {
@@ -34,7 +35,15 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-2xl mx-auto">
-      {/* Script / content area — rendered as HTML to preserve rich text formatting */}
+      {/* Script context from preceding script node — shown above the current input/end node */}
+      {scriptContext && (
+        <div
+          className="script-content bg-gray-900 rounded-xl p-5 text-gray-100 text-sm leading-relaxed border border-gray-800"
+          dangerouslySetInnerHTML={{ __html: scriptContext }}
+        />
+      )}
+
+      {/* Node's own content (e.g. input prompt) */}
       {node.content && (
         <div
           className="script-content bg-gray-900 rounded-xl p-5 text-gray-100 text-sm leading-relaxed border border-gray-800"
