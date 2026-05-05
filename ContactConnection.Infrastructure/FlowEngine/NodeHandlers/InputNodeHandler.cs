@@ -62,16 +62,30 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
 
     private static List<FlowOption>? ParseOptions(JsonObject node)
     {
-        var optionsArray = node["options"]?.AsArray();
-        if (optionsArray is null) return null;
+        var optionsNode = node["options"];
+        if (optionsNode is null) return null;
 
-        return optionsArray
-            .OfType<JsonObject>()
-            .Select(o => new FlowOption
-            {
-                Value = o["value"]?.GetValue<string>() ?? string.Empty,
-                Label = o["label"]?.GetValue<string>() ?? string.Empty
-            })
+        // Current format: [{value, label}] array
+        if (optionsNode is JsonArray optionsArray)
+        {
+            return optionsArray
+                .OfType<JsonObject>()
+                .Select(o => new FlowOption
+                {
+                    Value = o["value"]?.GetValue<string>() ?? string.Empty,
+                    Label = o["label"]?.GetValue<string>() ?? string.Empty
+                })
+                .ToList();
+        }
+
+        // Legacy format: comma-separated string (flows saved before array migration)
+        var optionsStr = optionsNode.GetValue<string>();
+        if (string.IsNullOrWhiteSpace(optionsStr)) return null;
+        return optionsStr
+            .Split(',')
+            .Select(o => o.Trim())
+            .Where(o => !string.IsNullOrEmpty(o))
+            .Select(o => new FlowOption { Value = o, Label = o })
             .ToList();
     }
 }
