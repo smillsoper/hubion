@@ -5,9 +5,6 @@ import { useReactFlow } from '@xyflow/react'
 
 interface Pt { x: number; y: number }
 
-// Catmull-Rom spline through all points → SVG cubic bezier path.
-// For 2 points, falls back to a simple vertical bezier that matches the
-// handle directions (output at bottom, input at top).
 function buildPath(pts: Pt[]): string {
   if (pts.length < 2) return ''
 
@@ -45,8 +42,6 @@ function distToSegment(p: Pt, a: Pt, b: Pt): number {
   return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy)
 }
 
-// Returns the index of the segment (0-based, between allPts[i] and allPts[i+1])
-// closest to the given click position.
 function nearestSegmentIndex(click: Pt, allPts: Pt[]): number {
   let best = 0, bestDist = Infinity
   for (let i = 0; i < allPts.length - 1; i++) {
@@ -69,7 +64,12 @@ export default function EditableEdge({
   const { setEdges, screenToFlowPosition } = useReactFlow()
   const waypoints = ((data?.waypoints ?? []) as Pt[])
   const [menu, setMenu] = useState<ContextMenu | null>(null)
+
+  // Track which waypoint is being dragged and the snapshot taken at drag-start.
+  // Using refs so mousemove handlers always see the latest values without
+  // re-registering listeners.
   const draggingIdx = useRef<number | null>(null)
+  const dragSnapshot = useRef<Pt[]>([])
 
   const allPts: Pt[] = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }]
   const pathD = buildPath(allPts)
@@ -92,37 +92,42 @@ export default function EditableEdge({
     return () => document.removeEventListener('click', close, { capture: true })
   }, [menu])
 
-  // Click on the wide invisible hit path → insert waypoint at the nearest segment
+  // Click on wide invisible hit path → insert waypoint at nearest segment
   const handlePathClick = (e: React.MouseEvent<SVGPathElement>) => {
     e.stopPropagation()
     const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     const segIdx = nearestSegmentIndex(pos, allPts)
     const next = [...waypoints]
-    // segIdx is the allPts index; waypoints start at allPts index 1,
-    // so inserting at segIdx puts the point between allPts[segIdx] and allPts[segIdx+1].
     next.splice(segIdx, 0, pos)
     setWaypoints(next)
   }
 
-  // Mousedown on a waypoint circle — start drag
-  const handleWpMouseDown = (e: React.MouseEvent, idx: number) => {
+  // ── Pointer-based drag ───────────────────────────────────────────────────
+  // Using pointer events + setPointerCapture so:
+  //   1. stopPropagation fires before React Flow's canvas pan handler sees it
+  //   2. The element receives all move/up events even if the pointer leaves it
+  //   3. React updates cx/cy in-place (same DOM node), preserving the capture
+
+  const handleWpPointerDown = (e: React.PointerEvent<SVGCircleElement>, idx: number) => {
     e.stopPropagation()
     e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
     draggingIdx.current = idx
-    const snapshot = [...waypoints] // capture at drag-start
+    dragSnapshot.current = [...waypoints]
+  }
 
-    const onMove = (ev: MouseEvent) => {
-      if (draggingIdx.current === null) return
-      const pos = screenToFlowPosition({ x: ev.clientX, y: ev.clientY })
-      setWaypoints(snapshot.map((wp, i) => (i === idx ? pos : wp)))
-    }
-    const onUp = () => {
-      draggingIdx.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+  const handleWpPointerMove = (e: React.PointerEvent<SVGCircleElement>, idx: number) => {
+    if (draggingIdx.current !== idx) return
+    e.stopPropagation()
+    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
+    setWaypoints(dragSnapshot.current.map((wp, i) => (i === idx ? pos : wp)))
+  }
+
+  const handleWpPointerUp = (e: React.PointerEvent<SVGCircleElement>, idx: number) => {
+    if (draggingIdx.current !== idx) return
+    e.stopPropagation()
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    draggingIdx.current = null
   }
 
   const handleWpContextMenu = (e: React.MouseEvent, idx: number) => {
@@ -144,7 +149,7 @@ export default function EditableEdge({
         className="react-flow__edge-path"
       />
 
-      {/* Invisible wide hit area — clicking it adds a waypoint */}
+      {/* Wide invisible hit area — click to add a waypoint */}
       <path
         d={pathD}
         fill="none"
@@ -164,13 +169,15 @@ export default function EditableEdge({
           fill={selected ? '#6366f1' : '#6b7280'}
           stroke="#fff"
           strokeWidth={1.5}
-          style={{ cursor: 'grab' }}
-          onMouseDown={ev => handleWpMouseDown(ev, i)}
+          style={{ cursor: 'grab', touchAction: 'none' }}
+          onPointerDown={ev => handleWpPointerDown(ev, i)}
+          onPointerMove={ev => handleWpPointerMove(ev, i)}
+          onPointerUp={ev => handleWpPointerUp(ev, i)}
           onContextMenu={ev => handleWpContextMenu(ev, i)}
         />
       ))}
 
-      {/* Context menu rendered into document.body so it escapes the SVG transform */}
+      {/* Context menu rendered into document.body to escape SVG transform */}
       {menu &&
         createPortal(
           <div
