@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { EdgeProps } from '@xyflow/react'
 import { EdgeLabelRenderer, useReactFlow } from '@xyflow/react'
@@ -72,12 +72,6 @@ export default function EditableEdge({
     [id, setEdges],
   )
 
-  useEffect(() => {
-    if (!menu) return
-    const close = () => setMenu(null)
-    document.addEventListener('click', close, { capture: true })
-    return () => document.removeEventListener('click', close, { capture: true })
-  }, [menu])
 
   const handlePathDoubleClick = (e: React.MouseEvent<SVGPathElement>) => {
     e.stopPropagation()
@@ -166,36 +160,42 @@ export default function EditableEdge({
 
       {menu &&
         createPortal(
-          <div
-            style={{
-              position: 'fixed',
-              left: menu.x,
-              top: menu.y,
-              background: '#1f2937',
-              border: '1px solid #374151',
-              borderRadius: 8,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-              zIndex: 9999,
-              minWidth: 170,
-              overflow: 'hidden',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button
+          <>
+            {/* Backdrop — clicking outside the menu closes it without triggering delete */}
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+              onClick={() => setMenu(null)}
+            />
+            <div
               style={{
-                display: 'block', width: '100%',
-                padding: '9px 16px', textAlign: 'left',
-                color: '#f87171', background: 'none', border: 'none',
-                cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
-              }}
-              onClick={() => {
-                setWaypoints(waypoints.filter((_, j) => j !== menu.waypointIdx))
-                setMenu(null)
+                position: 'fixed',
+                left: menu.x,
+                top: menu.y,
+                background: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: 8,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                zIndex: 9999,
+                minWidth: 170,
+                overflow: 'hidden',
               }}
             >
-              Delete curve point
-            </button>
-          </div>,
+              <button
+                style={{
+                  display: 'block', width: '100%',
+                  padding: '9px 16px', textAlign: 'left',
+                  color: '#f87171', background: 'none', border: 'none',
+                  cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
+                }}
+                onClick={() => {
+                  setWaypoints(waypoints.filter((_, j) => j !== menu.waypointIdx))
+                  setMenu(null)
+                }}
+              >
+                Delete curve point
+              </button>
+            </div>
+          </>,
           document.body,
         )}
     </>
