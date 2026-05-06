@@ -57,6 +57,7 @@ export interface ContactConnectionFlowDefinition {
   name: string
   entry_node: string
   nodes: Record<string, ContactConnectionNodeDef>
+  _waypoints?: Record<string, { x: number; y: number }[]>
 }
 
 export const NODE_META: Record<

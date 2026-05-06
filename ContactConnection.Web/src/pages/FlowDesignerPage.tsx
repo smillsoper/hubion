@@ -19,6 +19,7 @@ import '@xyflow/react/dist/style.css'
 import { flowsApi } from '../api/flows'
 import NodePalette from '../components/designer/NodePalette'
 import NodePropertiesPanel from '../components/designer/NodePropertiesPanel'
+import EditableEdge from '../components/designer/EditableEdge'
 import ScriptNode from '../components/designer/nodes/ScriptNode'
 import InputNode from '../components/designer/nodes/InputNode'
 import BranchNode from '../components/designer/nodes/BranchNode'
@@ -38,6 +39,10 @@ const nodeTypes = {
   end: EndNode,
 }
 
+const edgeTypes = {
+  editable: EditableEdge,
+}
+
 // ── Conversion helpers ──────────────────────────────────────────────────────
 
 function toContactConnectionDef(
@@ -46,6 +51,13 @@ function toContactConnectionDef(
   entryNodeId: string | null,
   flowName: string,
 ): ContactConnectionFlowDefinition {
+  // Collect waypoints keyed by edge id
+  const waypointsMap: Record<string, { x: number; y: number }[]> = {}
+  for (const e of edges) {
+    const wps = e.data?.waypoints as { x: number; y: number }[] | undefined
+    if (wps && wps.length > 0) waypointsMap[e.id] = wps
+  }
+
   const hubionNodes: ContactConnectionFlowDefinition['nodes'] = {}
   for (const n of nodes) {
     const outgoing = edges.filter((e) => e.source === n.id)
@@ -75,6 +87,7 @@ function toContactConnectionDef(
     name: flowName,
     entry_node: entryNodeId ?? nodes[0]?.id ?? '',
     nodes: hubionNodes,
+    ...(Object.keys(waypointsMap).length > 0 ? { _waypoints: waypointsMap } : {}),
   }
 }
 
@@ -104,12 +117,14 @@ function fromContactConnectionDef(def: ContactConnectionFlowDefinition): {
     x += 260
 
     for (const [handle, targetId] of Object.entries(transitions)) {
+      const edgeId = `${id}-${handle}-${targetId}`
       edges.push({
-        id: `${id}-${handle}-${targetId}`,
+        id: edgeId,
         source: id,
         target: targetId,
         sourceHandle: handle === 'default' ? null : handle,
-        type: 'smoothstep',
+        type: 'editable',
+        data: { waypoints: def._waypoints?.[edgeId] ?? [] },
       })
     }
   }
@@ -157,10 +172,17 @@ function DesignerCanvas({
     })
   }, [initialFlowId, setNodes, setEdges])
 
-  // Connection
+  // Connection — use explicit id format that matches fromContactConnectionDef
   const onConnect = useCallback(
     (params: Connection) =>
-      setEdges((eds) => addEdge({ ...params, type: 'smoothstep' }, eds)),
+      setEdges((eds) =>
+        addEdge({
+          ...params,
+          id: `${params.source}-${params.sourceHandle ?? 'default'}-${params.target}`,
+          type: 'editable',
+          data: { waypoints: [] },
+        } as Edge, eds),
+      ),
     [setEdges],
   )
 
@@ -329,6 +351,7 @@ function DesignerCanvas({
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
