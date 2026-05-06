@@ -79,7 +79,7 @@ export default function EditableEdge({
     return () => document.removeEventListener('click', close, { capture: true })
   }, [menu])
 
-  const handlePathClick = (e: React.MouseEvent<SVGPathElement>) => {
+  const handlePathDoubleClick = (e: React.MouseEvent<SVGPathElement>) => {
     e.stopPropagation()
     const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     const segIdx = nearestSegmentIndex(pos, allPts)
@@ -100,14 +100,16 @@ export default function EditableEdge({
         markerEnd={markerEnd}
         className="react-flow__edge-path"
       />
-      {/* Wide invisible hit area — click anywhere on the line to add a waypoint */}
+      {/* Wide invisible hit area.
+          Single click: no handler → bubbles to React Flow's edge group → selects the edge.
+          Double click: adds a waypoint at the clicked position. */}
       <path
         d={pathD}
         fill="none"
         stroke="transparent"
         strokeWidth={16}
-        onClick={handlePathClick}
-        style={{ cursor: 'crosshair' }}
+        onDoubleClick={handlePathDoubleClick}
+        style={{ cursor: 'pointer' }}
       />
 
       {/*
