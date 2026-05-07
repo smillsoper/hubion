@@ -1,0 +1,6 @@
+@ContactConnection.Api_HostAddress = http://localhost:5135
+
+GET {{ContactConnection.Api_HostAddress}}/api/v1/tenants
+Accept: application/json
+
+###

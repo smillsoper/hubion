@@ -60,8 +60,8 @@ public class SubscriptionProcessingService : BackgroundService
     {
         // Load active tenants from the platform schema
         using var platformScope = _scopeFactory.CreateScope();
-        var hubionDb = platformScope.ServiceProvider.GetRequiredService<ContactConnectionDbContext>();
-        var tenants  = await hubionDb.Tenants.Where(t => t.IsActive).ToListAsync(ct);
+        var platformDb = platformScope.ServiceProvider.GetRequiredService<ContactConnectionDbContext>();
+        var tenants    = await platformDb.Tenants.Where(t => t.IsActive).ToListAsync(ct);
 
         _logger.LogInformation("Found {Count} active tenant(s) to process.", tenants.Count);
 

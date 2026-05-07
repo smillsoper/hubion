@@ -12,8 +12,39 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
     : []
   const isSelect = options.length > 0
 
+  // Handles sit inside the option-chip strip. The strip is ~26 px tall at the bottom of the card;
+  // bottom: 13px places the handle center in the vertical middle of that strip.
+  const sourceHandles = isSelect ? (
+    <>
+      {options.map((opt, i) => (
+        <Handle
+          key={opt}
+          type="source"
+          position={Position.Bottom}
+          id={opt}
+          title={opt}
+          style={{
+            bottom: 13,
+            left: `${((i + 0.5) / options.length) * 100}%`,
+            transform: 'translate(-50%, 50%)',
+            background: '#10b981',
+            zIndex: 10,
+          }}
+        />
+      ))}
+    </>
+  ) : (
+    <Handle type="source" position={Position.Bottom} id="default" style={{ background: '#9ca3af' }} />
+  )
+
   return (
-    <NodeShell type="input" label={data.label as string} isEntry={data.isEntry as boolean} selected={selected}>
+    <NodeShell
+      type="input"
+      label={data.label as string}
+      isEntry={data.isEntry as boolean}
+      selected={selected}
+      sourceHandles={sourceHandles}
+    >
       <p className="text-xs text-gray-500 mt-0.5">
         {fieldType}
         {(data.required as boolean) && ' · required'}
@@ -26,42 +57,18 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
         </p>
       )}
 
-      {/* Option chips shown in node body */}
+      {/* Option chip strip — full-width bottom section so chips align with handle positions */}
       {isSelect && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
+        <div className="-mx-3 -mb-2 mt-2 border-t border-gray-100 flex">
           {options.map((opt) => (
-            <span
+            <div
               key={opt}
-              className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-200 leading-tight"
+              className="flex-1 text-center py-1.5 text-[10px] text-gray-500 font-medium border-r border-gray-100 last:border-r-0 truncate px-1"
             >
               {opt}
-            </span>
+            </div>
           ))}
         </div>
-      )}
-
-      {/* Source handles — one per option for select, single default otherwise */}
-      {isSelect ? (
-        options.map((opt, i) => (
-          <Handle
-            key={opt}
-            type="source"
-            position={Position.Bottom}
-            id={opt}
-            title={opt}
-            style={{
-              left: `${((i + 1) / (options.length + 1)) * 100}%`,
-              background: '#10b981',
-            }}
-          />
-        ))
-      ) : (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="default"
-          style={{ background: '#9ca3af' }}
-        />
       )}
     </NodeShell>
   )

@@ -58,7 +58,7 @@ function toContactConnectionDef(
     if (wps && wps.length > 0) waypointsMap[e.id] = wps
   }
 
-  const hubionNodes: ContactConnectionFlowDefinition['nodes'] = {}
+  const flowNodes: ContactConnectionFlowDefinition['nodes'] = {}
   for (const n of nodes) {
     const outgoing = edges.filter((e) => e.source === n.id)
     const transitions: Record<string, string> = {}
@@ -73,7 +73,7 @@ function toContactConnectionDef(
         ? (optionsStr as string).split(',').map((o) => o.trim()).filter(Boolean).map((o) => ({ value: o, label: o }))
         : undefined
 
-    hubionNodes[n.id] = {
+    flowNodes[n.id] = {
       ...rest,
       ...(options ? { options } : {}),
       type: (n.type ?? 'script') as ContactConnectionNodeType,
@@ -86,7 +86,7 @@ function toContactConnectionDef(
     flow_type: 'crm',
     name: flowName,
     entry_node: entryNodeId ?? nodes[0]?.id ?? '',
-    nodes: hubionNodes,
+    nodes: flowNodes,
     ...(Object.keys(waypointsMap).length > 0 ? { _waypoints: waypointsMap } : {}),
   }
 }
@@ -124,6 +124,7 @@ function fromContactConnectionDef(def: ContactConnectionFlowDefinition): {
         target: targetId,
         sourceHandle: handle === 'default' ? null : handle,
         type: 'editable',
+        label: handle !== 'default' ? handle : undefined,
         data: { waypoints: def._waypoints?.[edgeId] ?? [] },
       })
     }
@@ -180,6 +181,7 @@ function DesignerCanvas({
           ...params,
           id: `${params.source}-${params.sourceHandle ?? 'default'}-${params.target}`,
           type: 'editable',
+          label: params.sourceHandle ?? undefined,
           data: { waypoints: [] },
         } as Edge, eds),
       ),

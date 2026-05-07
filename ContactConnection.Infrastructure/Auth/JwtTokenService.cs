@@ -19,8 +19,8 @@ public class JwtTokenService : ITokenService
         var signingKey = _configuration["Jwt:SigningKey"]
             ?? throw new InvalidOperationException("Jwt:SigningKey is not configured.");
 
-        var issuer = _configuration["Jwt:Issuer"] ?? "hubion";
-        var audience = _configuration["Jwt:Audience"] ?? "hubion-api";
+        var issuer = _configuration["Jwt:Issuer"] ?? "contactconnection";
+        var audience = _configuration["Jwt:Audience"] ?? "contactconnection-api";
         var expiryMinutes = int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var m) ? m : 480;
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));

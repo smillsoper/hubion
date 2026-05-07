@@ -2,7 +2,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: hubion_postgres
+    container_name: cc_postgres
     environment:
       POSTGRES_USER: hubion
       POSTGRES_PASSWORD: hubion_dev
@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - hubion_pgdata:/var/lib/postgresql/data
+      - cc_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hubion -d hubion_master"]
       interval: 5s
@@ -19,11 +19,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: hubion_redis
+    container_name: cc_redis
     ports:
       - "6379:6379"
     volumes:
-      - hubion_redisdata:/data
+      - cc_redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -34,7 +34,7 @@ services:
   #   Enabled when telephony session begins.
   #   Requires SignalWire registry login: docker login freeswitch.signalwire.com
   #   image: signalwire/freeswitch:latest
-  #   container_name: hubion_freeswitch
+  #   container_name: cc_freeswitch
   #   ports:
   #     - "5060:5060/udp"          # SIP
   #     - "5060:5060/tcp"          # SIP TCP
@@ -42,13 +42,13 @@ services:
   #     - "16384-16394:16384-16394/udp"  # RTP media
   #   volumes:
   #     - ./freeswitch/conf:/etc/freeswitch
-  #     - ./freeswitch/sounds:/usr/share/freeswitch/sounds/hubion
+  #     - ./freeswitch/sounds:/usr/share/freeswitch/sounds/contactconnection
   #   environment:
   #     - FREESWITCH_DOMAIN=127.0.0.1
 
   nginx:
     image: nginx:alpine
-    container_name: hubion_nginx
+    container_name: cc_nginx
     ports:
       - "80:80"
     volumes:
@@ -60,26 +60,26 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: hubion_pgadmin
+    container_name: cc_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@hubion.dev
-      PGADMIN_DEFAULT_PASSWORD: hubion_dev
+      PGADMIN_DEFAULT_EMAIL: admin@contactconnection.local
+      PGADMIN_DEFAULT_PASSWORD: cc_dev
     ports:
       - "5050:80"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - hubion_pgadmin:/var/lib/pgadmin
+      - cc_pgadmin:/var/lib/pgadmin
 
   mailhog:
     image: mailhog/mailhog
-    container_name: hubion_mailhog
+    container_name: cc_mailhog
     ports:
       - "1025:1025"    # SMTP — configure outbound email to localhost:1025
       - "8025:8025"    # Web UI — http://localhost:8025
 
 volumes:
-  hubion_pgdata:
-  hubion_redisdata:
-  hubion_pgadmin:
+  cc_pgdata:
+  cc_redisdata:
+  cc_pgadmin:

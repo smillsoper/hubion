@@ -8,9 +8,10 @@ interface NodeShellProps {
   isEntry?: boolean
   selected?: boolean
   children?: React.ReactNode
+  sourceHandles?: React.ReactNode
 }
 
-export default function NodeShell({ type, label, isEntry, selected, children }: NodeShellProps) {
+export default function NodeShell({ type, label, isEntry, selected, children, sourceHandles }: NodeShellProps) {
   const meta = NODE_META[type]
   const hasSingle = meta.handles === 'single'
   const hasDual = meta.handles === 'dual'
@@ -19,18 +20,19 @@ export default function NodeShell({ type, label, isEntry, selected, children }: 
     <div
       style={{
         width: 210,
+        position: 'relative',
         borderColor: selected ? meta.color : '#d1d5db',
         borderWidth: selected ? 2 : 1,
       }}
-      className="bg-white rounded-lg border shadow-sm overflow-hidden"
+      className="bg-white rounded-lg border shadow-sm"
     >
       {/* Target handle */}
       <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />
 
-      {/* Colored header */}
+      {/* Colored header — rounded-t so bg color respects outer border-radius without overflow-hidden */}
       <div
         style={{ backgroundColor: meta.color }}
-        className="flex items-center justify-between px-3 py-1.5"
+        className="flex items-center justify-between px-3 py-1.5 rounded-t-[7px]"
       >
         <span className="text-white text-xs font-semibold uppercase tracking-wide">
           {meta.label}
@@ -48,13 +50,16 @@ export default function NodeShell({ type, label, isEntry, selected, children }: 
         {children}
       </div>
 
+      {/* Custom source handles (e.g. per-option for input/select nodes) */}
+      {sourceHandles}
+
       {/* Single source handle */}
-      {hasSingle && (
+      {!sourceHandles && hasSingle && (
         <Handle type="source" position={Position.Bottom} id="default" style={{ background: '#9ca3af' }} />
       )}
 
       {/* Dual source handles (branch / api_call) */}
-      {hasDual && (
+      {!sourceHandles && hasDual && (
         <>
           <Handle
             type="source"

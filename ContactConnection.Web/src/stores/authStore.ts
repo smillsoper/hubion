@@ -19,6 +19,6 @@ export const useAuthStore = create<AuthState>()(
         set({ token, agentId, tenantSubdomain }),
       clearAuth: () => set({ token: null, agentId: null, tenantSubdomain: null }),
     }),
-    { name: 'hubion-auth' },
+    { name: 'cc-auth' },
   ),
 )

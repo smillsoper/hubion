@@ -31,7 +31,7 @@ public class TenantResolutionMiddleware
 
     private static string? ExtractSubdomain(string host)
     {
-        // tms.hubion.local → tms
+        // subdomain.contactconnection.local → subdomain
         var parts = host.Split('.');
         return parts.Length >= 3 ? parts[0] : null;
     }

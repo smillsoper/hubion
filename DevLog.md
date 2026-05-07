@@ -29,6 +29,7 @@
 | 17 | 2026-04-26 | 6:45 AM PDT | 6:58 AM PDT | 13 min | ~717 min |
 | 18 | 2026-04-26 | 7:01 AM PDT | 7:59 AM PDT | 58 min | ~775 min |
 | 19 | 2026-05-03 | 7:49 AM PDT | 9:11 AM PDT | 82 min | ~857 min |
+| 20 | 2026-05-06 | 4:45 AM CDT | 5:36 AM CDT | 51 min | ~908 min |
 
 ---
 
@@ -1204,3 +1205,72 @@ Live test the stack after the Hubion → ContactConnection rebrand, fix a build 
 Confirmed: `NodeDisplay.tsx` always emits string `"true"` or `"false"` for checkbox inputs. `VariableResolver.EvaluateCondition` uses `StringComparison.OrdinalIgnoreCase` for `==`, so `{{flow.varName}} == true` resolves correctly. The actual bug in the user's test flow was a wrong variable reference (`{{flow.node_id}}` instead of the correct output variable name).
 
 **Build:** 0 warnings, 0 errors ✓
+
+---
+
+## Session 20 — Flow Designer Polish + Database Wipe + Hubion Rename
+
+**Date:** 2026-05-06
+**Start:** 4:45 AM CDT
+**End:** 5:36 AM CDT
+**Duration:** 51 minutes
+**Cumulative Total:** ~908 min
+
+### Goal
+
+Complete the input node connector-centering fix from Session 19's context limit, then wipe the TMS test data and rename all Hubion references to ContactConnection.
+
+### Accomplished
+
+**Input node connector centering fix**
+- Root cause: `NodeShell` had `overflow-hidden` on the outer div, clipping React Flow handle dots; `InputNode` rendered handles inside the padded body div rather than as direct children of the outer container.
+- `NodeShell.tsx` — removed `overflow-hidden`; added `rounded-t-[7px]` to header; added `position: 'relative'` to outer div; added `sourceHandles?: React.ReactNode` prop rendered as a direct child of outer container.
+- `InputNode.tsx` — option chips redesigned as a full-width bottom strip (`flex-1` per chip) so chips align with handle positions; handles passed via `sourceHandles` prop at `bottom: 13, left: ((i+0.5)/N)*100%` — handles sit visually inside the chip strip.
+
+**Edge labels**
+- `EditableEdge.tsx` — destructures `label` from `EdgeProps`; renders label as white pill at path midpoint via `EdgeLabelRenderer`.
+- `FlowDesignerPage.tsx` — sets `label: handle` on edges from select/branch/api_call nodes; labels appear automatically on connecting lines.
+
+**Database wipe and test-tenant provisioning**
+- Dropped and recreated `hubion_master` database; re-ran all migrations.
+- Inserted `Test Tenant` directly via SQL (subdomain: `test-tenant`, schema: `tenant_test_tenant`).
+- Created admin agent: `admin@contactconnection.local` / `Admin123!`; login verified.
+- `Tenant.Create()` — added hyphen/space normalization in schema name generation.
+- `LoginPage.tsx` — removed `placeholder="tms"` from subdomain input.
+
+**Hubion -> ContactConnection rename (all code files)**
+- `docker-compose.yml` — container names `hubion_*` -> `cc_*`; volume names updated; pgAdmin credentials updated to `admin@contactconnection.local` / `cc_dev`.
+- `appsettings.json` — JWT Issuer/Audience updated to `contactconnection`/`contactconnection-api`.
+- `JwtTokenService.cs` — fallback values updated to match.
+- `TenantResolutionMiddleware.cs` — comment updated.
+- `SubscriptionProcessingService.cs` — variable `hubionDb` renamed to `platformDb`.
+- `package.json` — name: `contactconnection-web`.
+- `authStore.ts` — Zustand persist key: `cc-auth`.
+- `FlowDesignerPage.tsx` — variable `hubionNodes` renamed to `flowNodes`.
+- `Hubion.Api.http` — deleted; replaced with `ContactConnection.Api.http`.
+- Docker services restarted with new `cc_*` names.
+
+**Build:** 0 warnings, 0 errors
+
+### Credentials
+
+| Field | Value |
+|---|---|
+| Tenant subdomain | `test-tenant` |
+| Email | `admin@contactconnection.local` |
+| Password | `Admin123!` |
+| pgAdmin | `admin@contactconnection.local` / `cc_dev` |
+
+---
+
+## Session 21 — Database Wipe + Hubion Rename (continuation)
+
+**Date:** 2026-05-07
+**Start:** 5:58 AM CDT
+**End:** 6:09 AM CDT
+**Duration:** 11 minutes
+**Cumulative Total:** ~919 min
+
+### Accomplished
+
+Continuation of Session 20 work — session was still in progress when the user provided timestamps. No additional work items beyond what is logged in Session 20 above.

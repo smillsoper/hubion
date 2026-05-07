@@ -52,7 +52,7 @@ function nearestSegmentIndex(click: Pt, allPts: Pt[]): number {
 interface ContextMenu { waypointIdx: number; x: number; y: number }
 
 export default function EditableEdge({
-  id, sourceX, sourceY, targetX, targetY, data, selected, markerEnd,
+  id, sourceX, sourceY, targetX, targetY, data, selected, markerEnd, label,
 }: EdgeProps) {
   const { setEdges, screenToFlowPosition } = useReactFlow()
   const waypoints = (data?.waypoints ?? []) as Pt[]
@@ -63,6 +63,15 @@ export default function EditableEdge({
   const allPts: Pt[] = [{ x: sourceX, y: sourceY }, ...waypoints, { x: targetX, y: targetY }]
   const pathD = buildPath(allPts)
   const stroke = selected ? '#6366f1' : '#9ca3af'
+
+  // Midpoint for label placement — midpoint of allPts array
+  const mid = allPts[Math.floor(allPts.length / 2)]
+  const labelX = allPts.length % 2 === 0
+    ? (allPts[allPts.length / 2 - 1].x + allPts[allPts.length / 2].x) / 2
+    : mid.x
+  const labelY = allPts.length % 2 === 0
+    ? (allPts[allPts.length / 2 - 1].y + allPts[allPts.length / 2].y) / 2
+    : mid.y
 
   const setWaypoints = useCallback(
     (wps: Pt[]) =>
@@ -114,6 +123,36 @@ export default function EditableEdge({
         "nodrag nopan" classes tell React Flow to ignore these elements.
       */}
       <EdgeLabelRenderer>
+        {/* Edge label */}
+        {label && (
+          <div
+            className="nodrag nopan"
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          >
+            <span
+              style={{
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: 4,
+                padding: '1px 6px',
+                fontSize: 11,
+                color: '#374151',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              }}
+            >
+              {label as string}
+            </span>
+          </div>
+        )}
+
+        {/* Waypoint handles */}
         {waypoints.map((wp, i) => (
           <div
             key={i}

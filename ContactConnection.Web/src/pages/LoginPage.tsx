@@ -44,7 +44,7 @@ export default function LoginPage() {
               required
               value={subdomain}
               onChange={(e) => setSubdomain(e.target.value)}
-              placeholder="tms"
+
               className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

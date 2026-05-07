@@ -20,7 +20,8 @@ public class Tenant
 
     public static Tenant Create(string name, string subdomain, string planTier, string timezone)
     {
-        var normalized = subdomain.ToLowerInvariant();
+        // Replace hyphens/spaces with underscores so the schema name is a valid unquoted PG identifier.
+        var normalized = subdomain.ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
         return new Tenant
         {
             Id = Guid.NewGuid(),
