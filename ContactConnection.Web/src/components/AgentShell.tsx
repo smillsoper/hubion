@@ -1,5 +1,8 @@
+import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { useSessionTimeout } from '../hooks/useSessionTimeout'
+import SessionTimeoutModal from './SessionTimeoutModal'
 import SoftphonePanel from './SoftphonePanel'
 import FlowPanel from './FlowPanel'
 import ChatPanel from './ChatPanel'
@@ -8,8 +11,23 @@ export default function AgentShell() {
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const navigate = useNavigate()
 
+  const handleLogout = useCallback(() => {
+    clearAuth()
+    navigate('/login', { replace: true })
+  }, [clearAuth, navigate])
+
+  const { showWarning, secondsLeft, keepAlive } = useSessionTimeout(handleLogout)
+
   return (
     <div className="h-screen flex flex-col bg-gray-950 text-white overflow-hidden">
+      {showWarning && (
+        <SessionTimeoutModal
+          secondsLeft={secondsLeft}
+          onKeepAlive={keepAlive}
+          onLogout={handleLogout}
+        />
+      )}
+
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
         <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="h-7" />
@@ -21,7 +39,7 @@ export default function AgentShell() {
             Flows
           </button>
           <button
-            onClick={clearAuth}
+            onClick={handleLogout}
             className="text-xs text-gray-400 hover:text-white transition-colors"
           >
             Sign out

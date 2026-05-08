@@ -267,7 +267,7 @@ function DesignerCanvas({
     try {
       const def = toContactConnectionDef(nodes as Node<NodeData>[], edges, entryNodeId, flowName)
       if (flowId) {
-        await flowsApi.updateDefinition(flowId, def)
+        await flowsApi.updateDefinition(flowId, flowName, def)
         setStatusMsg('Saved')
       } else {
         const detail = await flowsApi.create(flowName, 'crm', def)

@@ -73,6 +73,8 @@ public static class FlowsEndpoints
             if (flow is null || flow.TenantId != tenantContext.Current.Id)
                 return Results.NotFound();
 
+            if (!string.IsNullOrWhiteSpace(req.Name))
+                flow.Rename(req.Name);
             flow.UpdateDefinition(req.Definition);
             await flows.SaveChangesAsync(ct);
 
@@ -175,4 +177,4 @@ public record CreateFlowRequest(
     Guid? ClientId,
     Guid? CampaignId);
 
-public record UpdateFlowRequest(string Definition);
+public record UpdateFlowRequest(string Definition, string? Name = null);

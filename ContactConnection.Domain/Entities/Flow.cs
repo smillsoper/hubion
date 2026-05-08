@@ -67,6 +67,12 @@ public class Flow
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public void Rename(string name)
+    {
+        Name = name;
+        UpdatedAt = DateTimeOffset.UtcNow;
+    }
+
     public void UpdateDefinition(string definition)
     {
         Definition = definition;

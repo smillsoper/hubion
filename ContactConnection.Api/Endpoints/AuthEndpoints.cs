@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ContactConnection.Application.Interfaces.Repositories;
 using ContactConnection.Application.Interfaces.Services;
 using ContactConnection.Application.Services;
@@ -11,8 +12,37 @@ public static class AuthEndpoints
         var group = app.MapGroup("/api/v1/auth");
 
         group.MapPost("login", Login);
+        group.MapPost("refresh", Refresh).RequireAuthorization();
 
         return app;
+    }
+
+    private static async Task<IResult> Refresh(
+        ClaimsPrincipal user,
+        IAgentRepository agents,
+        ITokenService tokens,
+        TenantContext tenantContext,
+        CancellationToken ct)
+    {
+        if (tenantContext.Current is null) return Results.Unauthorized();
+
+        var agentIdClaim = user.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(agentIdClaim, out var agentId))
+            return Results.Unauthorized();
+
+        var agent = await agents.GetByIdAsync(agentId, ct);
+        if (agent is null) return Results.Unauthorized();
+
+        var token = tokens.GenerateToken(agent, tenantContext.Current);
+
+        return Results.Ok(new LoginResponse(
+            token,
+            agent.Id,
+            agent.Email,
+            agent.FirstName,
+            agent.LastName,
+            agent.Role,
+            tenantContext.Current.Subdomain));
     }
 
     private static async Task<IResult> Login(

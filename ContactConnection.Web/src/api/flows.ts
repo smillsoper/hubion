@@ -42,8 +42,8 @@ export const flowsApi = {
 
   getDetail: (id: string) => api.get<FlowDetail>(`/api/v1/flows/${id}`),
 
-  updateDefinition: (id: string, definition: ContactConnectionFlowDefinition) =>
-    api.put<FlowDetail>(`/api/v1/flows/${id}`, { definition: JSON.stringify(definition) }),
+  updateDefinition: (id: string, name: string, definition: ContactConnectionFlowDefinition) =>
+    api.put<FlowDetail>(`/api/v1/flows/${id}`, { name, definition: JSON.stringify(definition) }),
 
   publish: (id: string) => api.post<FlowDetail>(`/api/v1/flows/${id}/publish`),
 
