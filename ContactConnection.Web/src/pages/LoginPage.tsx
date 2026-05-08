@@ -33,7 +33,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm bg-gray-900 rounded-2xl shadow-xl p-8">
         <div className="flex flex-col items-center mb-7">
           <img src="/cc-logo-dark.svg" alt="Contact Connection" className="h-14 mb-4" />
-          <p className="text-gray-400 text-xs">Agent sign in</p>
+          <p className="text-white font-medium" style={{ fontSize: 18 }}>Sign In</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
