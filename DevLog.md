@@ -30,6 +30,8 @@
 | 18 | 2026-04-26 | 7:01 AM PDT | 7:59 AM PDT | 58 min | ~775 min |
 | 19 | 2026-05-03 | 7:49 AM PDT | 9:11 AM PDT | 82 min | ~857 min |
 | 20 | 2026-05-06 | 4:45 AM CDT | 5:36 AM CDT | 51 min | ~908 min |
+| 21 | 2026-05-07 | 5:58 AM CDT | 6:09 AM CDT | 11 min | ~919 min |
+| 22 | 2026-05-08 | 4:54 AM CDT | 5:25 AM CDT | 31 min | ~950 min |
 
 ---
 
@@ -1274,3 +1276,47 @@ Complete the input node connector-centering fix from Session 19's context limit,
 ### Accomplished
 
 Continuation of Session 20 work — session was still in progress when the user provided timestamps. No additional work items beyond what is logged in Session 20 above.
+
+---
+
+## Session 22 — UI Polish: Branding, Dark Theme, Flow Designer
+
+**Date:** 2026-05-08
+**Start:** 4:54 AM CDT
+**End:** 5:25 AM CDT
+**Duration:** 31 minutes
+**Cumulative Total:** ~950 min
+
+### Accomplished
+
+**Session timeout warning modal**
+- `POST /api/v1/auth/refresh` — new protected endpoint; reads `sub` claim from valid Bearer token, re-issues a fresh JWT without requiring password.
+- `useSessionTimeout.ts` — hook parses JWT `exp`, schedules warning at T−5 min and auto-logout at T=0; countdown state updates every second.
+- `SessionTimeoutModal.tsx` — MM:SS countdown display; "Keep me logged in" calls refresh and reschedules timers; "Sign out now" calls logout immediately.
+- `AgentShell.tsx` — wired in hook and modal; Sign Out button now routes to `/login` via `handleLogout`.
+
+**Login page branding polish**
+- Logo tagline changed from "CALL CENTER PLATFORM" to "Call Center Solutions, LLC" (both light and dark SVG variants); font-size 9.5→13, letter-spacing 3→0.5.
+- Tagline resized further: font-size 13→21, baseline y=80→86 so text bottom aligns with the bottom of the front C arc.
+- Form field labels recolored to `#38BDF8` (matches "Connection" wordmark blue).
+- Subtitle changed from "Agent sign in" → "Sign In"; font-size 18px, solid white.
+- Label font size increased from `text-xs` (12px) to 16px (12pt).
+
+**Dark theme — Flows page and Flow Designer**
+- `FlowsPage.tsx` — full dark restyle: gray-950 page, gray-900 header/table, dark badges (emerald/amber), sky-400 accent buttons, dark navbar logo.
+- `FlowDesignerPage.tsx` — gray-900 top bar, dark flow name input, `colorMode="dark"` on ReactFlow canvas.
+- `NodePalette.tsx` — gray-900 sidebar, gray-800 card bodies, gray-700 borders.
+- `NodePropertiesPanel.tsx` — gray-900 panel, dark inputs/selects/textareas, sky-500 focus rings.
+- `RichTextEditor.tsx` — `dark` prop added; dark toolbar (gray-800, gray-700 controls), dark editor surface via `script-editor-dark` CSS class.
+- `ScriptContentEditor.tsx` — forwards `dark` prop; pop-out modal stays white.
+- `index.css` — `.script-editor-dark .tiptap` sets gray-800 bg + gray-200 text.
+
+**Canvas node dark theme**
+- `NodeShell.tsx` — `bg-white` → `bg-gray-800`, unselected border gray-700, label text gray-100, handle color gray-600.
+- All node components — secondary text colors adjusted for dark background (gray-400 content text, gray-500 empty states, green-400/red-400 true/false indicators, emerald-400 variable badges, gray-700 chip strip borders).
+
+**Flow designer navbar logo**
+- `cc-navbar-dark.svg` — removed opaque `#0A0F1A` rect (transparent background inherits navbar `bg-gray-900`); divider color updated to gray-600 (`#4B5563`).
+- `FlowDesignerPage.tsx` — outer nav div changed to `items-stretch` (no padding); logo is first direct flex child and stretches to fill the full bar height; remaining content sits in a padded inner wrapper, vertically centred.
+
+**Build:** 0 warnings, 0 errors ✓
