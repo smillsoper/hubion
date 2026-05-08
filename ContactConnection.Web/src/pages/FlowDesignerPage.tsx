@@ -305,29 +305,29 @@ function DesignerCanvas({
   const selectedNode = selectedNodeId ? (nodes as Node<NodeData>[]).find((n) => n.id === selectedNodeId) : null
 
   return (
-    <div className="flex flex-col" style={{ height: '100vh' }}>
+    <div className="flex flex-col bg-gray-950" style={{ height: '100vh' }}>
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-gray-200 shrink-0">
-        <img src="/cc-navbar-light.svg" alt="Contact Connection" className="h-8 shrink-0" />
-        <div className="w-px h-5 bg-gray-200 shrink-0" />
+      <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
+        <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="h-8 shrink-0" />
+        <div className="w-px h-5 bg-gray-700 shrink-0" />
         <button
-          className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1"
+          className="text-gray-400 hover:text-gray-200 text-sm flex items-center gap-1 transition-colors"
           onClick={() => navigate('/flows')}
         >
           ← Back
         </button>
         <input
-          className="flex-1 max-w-xs border border-gray-300 rounded px-3 py-1 text-sm font-medium focus:outline-none focus:border-blue-400"
+          className="flex-1 max-w-xs bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm font-medium text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
           value={flowName}
           onChange={(e) => setFlowName(e.target.value)}
           placeholder="Flow name"
         />
         {statusMsg && (
-          <span className="text-sm text-gray-500 italic">{statusMsg}</span>
+          <span className="text-sm text-gray-400 italic">{statusMsg}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           <button
-            className="px-4 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="px-4 py-1.5 text-sm border border-gray-700 rounded text-gray-300 hover:bg-gray-800 disabled:opacity-50 transition-colors"
             onClick={onSave}
             disabled={saving}
           >
@@ -363,6 +363,7 @@ function DesignerCanvas({
             onDrop={onDrop}
             fitView
             deleteKeyCode="Delete"
+            colorMode="dark"
           >
             <Background />
             <Controls />

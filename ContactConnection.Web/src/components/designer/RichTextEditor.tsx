@@ -77,15 +77,13 @@ const HIGHLIGHT_COLORS = [
 // ── Toolbar button ─────────────────────────────────────────────────────────
 
 function Btn({
-  active,
-  onClick,
-  title,
-  children,
+  active, onClick, title, children, dark,
 }: {
   active?: boolean
   onClick: () => void
   title: string
   children: React.ReactNode
+  dark?: boolean
 }) {
   return (
     <button
@@ -95,7 +93,10 @@ function Btn({
       className={`
         w-6 h-6 flex items-center justify-center rounded text-[11px] font-medium
         transition-colors select-none shrink-0
-        ${active ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
+        ${dark
+          ? active ? 'bg-gray-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          : active ? 'bg-gray-200 text-gray-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        }
       `}
     >
       {children}
@@ -103,22 +104,20 @@ function Btn({
   )
 }
 
-function Divider() {
-  return <div className="w-px h-4 bg-gray-300 mx-0.5 shrink-0" />
+function Divider({ dark }: { dark?: boolean }) {
+  return <div className={`w-px h-4 mx-0.5 shrink-0 ${dark ? 'bg-gray-600' : 'bg-gray-300'}`} />
 }
 
 // ── Color picker popover ───────────────────────────────────────────────────
 
 function ColorPicker({
-  colors,
-  onSelect,
-  current,
-  label,
+  colors, onSelect, current, label, dark,
 }: {
   colors: { label: string; value: string }[]
   onSelect: (value: string) => void
   current: string
   label: string
+  dark?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
@@ -128,20 +127,17 @@ function ColorPicker({
         type="button"
         title={label}
         onClick={() => setOpen((v) => !v)}
-        className="w-6 h-6 flex flex-col items-center justify-center rounded hover:bg-gray-100 transition-colors"
+        className={`w-6 h-6 flex flex-col items-center justify-center rounded transition-colors ${dark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
       >
-        <span className="text-[11px] font-bold text-gray-700 leading-none">{label[0]}</span>
-        <span
-          className="w-4 h-0.5 mt-0.5 rounded"
-          style={{ backgroundColor: current || '#6b7280' }}
-        />
+        <span className={`text-[11px] font-bold leading-none ${dark ? 'text-gray-300' : 'text-gray-700'}`}>{label[0]}</span>
+        <span className="w-4 h-0.5 mt-0.5 rounded" style={{ backgroundColor: current || '#6b7280' }} />
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-7 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex flex-col gap-1.5">
-            <p className="text-[10px] text-gray-500 font-medium mb-0.5">{label}</p>
+          <div className={`absolute left-0 top-7 z-20 rounded-lg shadow-lg p-2 flex flex-col gap-1.5 ${dark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+            <p className={`text-[10px] font-medium mb-0.5 ${dark ? 'text-gray-400' : 'text-gray-500'}`}>{label}</p>
             <div className="flex gap-1.5 flex-wrap w-40">
               {colors.map((c) => (
                 <button
@@ -152,7 +148,7 @@ function ColorPicker({
                   className="w-6 h-6 rounded border-2 transition-all hover:scale-110"
                   style={{
                     backgroundColor: c.value || 'transparent',
-                    borderColor: current === c.value ? '#6366f1' : '#d1d5db',
+                    borderColor: current === c.value ? '#6366f1' : (dark ? '#4b5563' : '#d1d5db'),
                     backgroundImage: !c.value
                       ? 'repeating-linear-gradient(45deg,#d1d5db,#d1d5db 2px,transparent 2px,transparent 8px)'
                       : undefined,
@@ -173,10 +169,11 @@ interface RichTextEditorProps {
   value: string
   onChange: (html: string) => void
   onExpand?: () => void
+  dark?: boolean
 }
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
-  function RichTextEditor({ value, onChange, onExpand }, ref) {
+  function RichTextEditor({ value, onChange, onExpand, dark }, ref) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const editor = useEditor({
@@ -250,16 +247,20 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       reader.readAsDataURL(file)
     }
 
+    const selectCls = dark
+      ? 'h-6 text-[11px] border rounded px-1 focus:outline-none shrink-0 bg-gray-700 border-gray-600 text-gray-200'
+      : 'h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0'
+
     return (
-      <div className="border border-gray-300 rounded overflow-hidden focus-within:border-blue-400 transition-colors">
+      <div className={`border rounded overflow-hidden transition-colors ${dark ? 'border-gray-700 focus-within:border-sky-500' : 'border-gray-300 focus-within:border-blue-400'}`}>
         {/* Toolbar */}
-        <div className="flex items-center gap-0.5 px-1.5 py-1 bg-gray-50 border-b border-gray-200 flex-wrap">
+        <div className={`flex items-center gap-0.5 px-1.5 py-1 border-b flex-wrap ${dark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
 
           {/* Font family */}
           <select
             value={activeFontFamily}
             onChange={(e) => applyFontFamily(e.target.value)}
-            className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
+            className={selectCls}
             style={{ maxWidth: 92 }}
           >
             {FONT_FAMILIES.map((f) => (
@@ -271,7 +272,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           <select
             value={activeFontSize}
             onChange={(e) => applyFontSize(e.target.value)}
-            className="h-6 text-[11px] border border-gray-300 rounded px-1 bg-white text-gray-700 focus:outline-none shrink-0"
+            className={selectCls}
             style={{ maxWidth: 58 }}
           >
             <option value="">Size</option>
@@ -280,23 +281,24 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
             ))}
           </select>
 
-          <Divider />
+          <Divider dark={dark} />
 
           {/* Bold / Italic / Underline */}
-          <Btn active={editor.isActive('bold')}      onClick={() => editor.chain().focus().toggleBold().run()}      title="Bold">
+          <Btn dark={dark} active={editor.isActive('bold')}      onClick={() => editor.chain().focus().toggleBold().run()}      title="Bold">
             <span className="font-bold">B</span>
           </Btn>
-          <Btn active={editor.isActive('italic')}    onClick={() => editor.chain().focus().toggleItalic().run()}    title="Italic">
+          <Btn dark={dark} active={editor.isActive('italic')}    onClick={() => editor.chain().focus().toggleItalic().run()}    title="Italic">
             <span className="italic">I</span>
           </Btn>
-          <Btn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
+          <Btn dark={dark} active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Underline">
             <span className="underline">U</span>
           </Btn>
 
-          <Divider />
+          <Divider dark={dark} />
 
           {/* Color pickers */}
           <ColorPicker
+            dark={dark}
             label="Text color"
             colors={TEXT_COLORS}
             current={activeTextColor}
@@ -305,6 +307,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               : editor.chain().focus().unsetColor().run()}
           />
           <ColorPicker
+            dark={dark}
             label="Highlight"
             colors={HIGHLIGHT_COLORS}
             current={activeHighlight}
@@ -313,32 +316,32 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               : editor.chain().focus().unsetHighlight().run()}
           />
 
-          <Divider />
+          <Divider dark={dark} />
 
           {/* Lists */}
-          <Btn active={editor.isActive('bulletList')}  onClick={() => editor.chain().focus().toggleBulletList().run()}  title="Bullet list">•</Btn>
-          <Btn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered list">1.</Btn>
+          <Btn dark={dark} active={editor.isActive('bulletList')}  onClick={() => editor.chain().focus().toggleBulletList().run()}  title="Bullet list">•</Btn>
+          <Btn dark={dark} active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered list">1.</Btn>
 
-          <Divider />
+          <Divider dark={dark} />
 
           {/* Insert image */}
-          <Btn onClick={() => fileInputRef.current?.click()} title="Insert image">
+          <Btn dark={dark} onClick={() => fileInputRef.current?.click()} title="Insert image">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </Btn>
 
-          <Divider />
+          <Divider dark={dark} />
 
           {/* Clear formatting */}
-          <Btn onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting">✕</Btn>
+          <Btn dark={dark} onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear formatting">✕</Btn>
 
           {/* Expand button — right-aligned */}
           {onExpand && (
             <>
               <div className="flex-1" />
-              <Btn onClick={onExpand} title="Expand editor">
+              <Btn dark={dark} onClick={onExpand} title="Expand editor">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -351,11 +354,11 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
         {/* Editor surface */}
         <EditorContent
           editor={editor}
-          className="script-editor px-3 py-2 text-sm text-gray-800 min-h-28 focus:outline-none"
+          className={`script-editor${dark ? ' script-editor-dark' : ''} px-3 py-2 text-sm min-h-28 focus:outline-none${dark ? '' : ' text-gray-800'}`}
         />
 
         {/* Helper */}
-        <div className="px-2 pb-1.5 text-[10px] text-gray-400">
+        <div className={`px-2 pb-1.5 text-[10px] ${dark ? 'text-gray-500 bg-gray-800' : 'text-gray-400'}`}>
           Use <span className="font-mono">{'{{namespace.field}}'}</span> for dynamic values — formatting applies to surrounding text. Images can be pasted directly.
         </div>
 
