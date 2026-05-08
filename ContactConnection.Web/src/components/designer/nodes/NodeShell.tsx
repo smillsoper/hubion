@@ -21,13 +21,13 @@ export default function NodeShell({ type, label, isEntry, selected, children, so
       style={{
         width: 210,
         position: 'relative',
-        borderColor: selected ? meta.color : '#d1d5db',
+        borderColor: selected ? meta.color : '#374151',
         borderWidth: selected ? 2 : 1,
       }}
-      className="bg-white rounded-lg border shadow-sm"
+      className="bg-gray-800 rounded-lg border shadow-sm"
     >
       {/* Target handle */}
-      <Handle type="target" position={Position.Top} style={{ background: '#9ca3af' }} />
+      <Handle type="target" position={Position.Top} style={{ background: '#6b7280' }} />
 
       {/* Colored header — rounded-t so bg color respects outer border-radius without overflow-hidden */}
       <div
@@ -46,7 +46,7 @@ export default function NodeShell({ type, label, isEntry, selected, children, so
 
       {/* Body */}
       <div className="px-3 py-2">
-        <p className="text-sm font-medium text-gray-800 truncate">{label}</p>
+        <p className="text-sm font-medium text-gray-100 truncate">{label}</p>
         {children}
       </div>
 

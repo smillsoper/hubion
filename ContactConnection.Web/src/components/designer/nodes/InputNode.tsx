@@ -45,25 +45,25 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
       selected={selected}
       sourceHandles={sourceHandles}
     >
-      <p className="text-xs text-gray-500 mt-0.5">
+      <p className="text-xs text-gray-400 mt-0.5">
         {fieldType}
         {(data.required as boolean) && ' · required'}
       </p>
 
       {/* Output variable badge */}
       {outputVariable && (
-        <p className="text-[10px] text-emerald-600 mt-0.5 font-mono truncate">
+        <p className="text-[10px] text-emerald-400 mt-0.5 font-mono truncate">
           → {'{{flow.' + outputVariable + '}}'}
         </p>
       )}
 
       {/* Option chip strip — full-width bottom section so chips align with handle positions */}
       {isSelect && (
-        <div className="-mx-3 -mb-2 mt-2 border-t border-gray-100 flex">
+        <div className="-mx-3 -mb-2 mt-2 border-t border-gray-700 flex">
           {options.map((opt) => (
             <div
               key={opt}
-              className="flex-1 text-center py-1.5 text-[10px] text-gray-500 font-medium border-r border-gray-100 last:border-r-0 truncate px-1"
+              className="flex-1 text-center py-1.5 text-[10px] text-gray-400 font-medium border-r border-gray-700 last:border-r-0 truncate px-1"
             >
               {opt}
             </div>
