@@ -38,7 +38,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs mb-1" style={{ color: '#38BDF8' }}>Tenant subdomain</label>
+            <label className="block mb-1" style={{ color: '#38BDF8', fontSize: 16 }}>Tenant subdomain</label>
             <input
               type="text"
               required
@@ -49,7 +49,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: '#38BDF8' }}>Email</label>
+            <label className="block mb-1" style={{ color: '#38BDF8', fontSize: 16 }}>Email</label>
             <input
               type="email"
               required
@@ -59,7 +59,7 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-xs mb-1" style={{ color: '#38BDF8' }}>Password</label>
+            <label className="block mb-1" style={{ color: '#38BDF8', fontSize: 16 }}>Password</label>
             <input
               type="password"
               required
