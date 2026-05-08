@@ -26,9 +26,9 @@
   </text>
 
   <!-- Tagline -->
-  <text x="113" y="80"
+  <text x="113" y="86"
     font-family="'Trebuchet MS', 'Segoe UI', sans-serif"
-    font-size="13"
+    font-size="21"
     font-weight="400"
     letter-spacing="0.5"
     fill="#94A3B8">Call Center Solutions, LLC</text>
