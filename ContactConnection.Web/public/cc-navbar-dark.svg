@@ -10,8 +10,6 @@
     </linearGradient>
   </defs>
 
-  <rect width="380" height="56" fill="#0A0F1A"/>
-
   <!-- CC icon: paths shifted down so top clears the frame -->
   <!-- At scale 0.44, original y=14 maps to ~8px. Moving back C down to y=22 gives ~12px top margin -->
   <g transform="translate(2, 0) scale(0.44)">
@@ -20,7 +18,7 @@
   </g>
 
   <!-- Divider -->
-  <line x1="50" y1="8" x2="50" y2="48" stroke="#1E3A5F" stroke-width="1"/>
+  <line x1="50" y1="8" x2="50" y2="48" stroke="#4B5563" stroke-width="1"/>
 
   <!-- Wordmark -->
   <text x="60" y="35"
