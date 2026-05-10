@@ -32,6 +32,7 @@
 | 20 | 2026-05-06 | 4:45 AM CDT | 5:36 AM CDT | 51 min | ~908 min |
 | 21 | 2026-05-07 | 5:58 AM CDT | 6:09 AM CDT | 11 min | ~919 min |
 | 22 | 2026-05-08 | 4:54 AM CDT | 5:25 AM CDT | 31 min | ~950 min |
+| 23 | 2026-05-10 | 1:11 PM CDT | TBD | TBD | TBD |
 
 ---
 
@@ -1320,3 +1321,33 @@ Continuation of Session 20 work — session was still in progress when the user 
 - `FlowDesignerPage.tsx` — outer nav div changed to `items-stretch` (no padding); logo is first direct flex child and stretches to fill the full bar height; remaining content sits in a padded inner wrapper, vertically centred.
 
 **Build:** 0 warnings, 0 errors ✓
+
+---
+
+## Session 23 — Email Node for Flow Designer
+
+**Date:** 2026-05-10
+**Start:** 1:11 PM CDT
+**End:** TBD
+**Duration:** TBD
+**Cumulative Total:** TBD
+
+### Accomplished
+
+**Email node — backend**
+- `IEmailValidationService` (Application) — `ValidateAsync(email, checkARecord, checkMX, checkDisposable)` → `EmailValidationResult` record; nullable bool fields for unchecked validations.
+- `EmailValidationService` (Infrastructure) — DnsClient 1.8.0 for MX/A/AAAA record lookup; hardcoded disposable domain blocklist (~80 domains); regex format validation; `isDeliverable` composite = format + MX passes + not disposable.
+- `EmailNodeHandler` — display on null input; required guard (re-displays without advancing if blank + required=true); stores flat-key FlowVars: `{outputVar}`, `{outputVar}.isFormatValid`, `.DomainExists`, `.MXExists`, `.isDisposable`, `.isDeliverable`; resolves via existing `{{flow.x.subprop}}` split-on-first-dot pattern with no resolver changes needed.
+- `FlowNodeState` — added `Required` bool property; `NodeHandlerBase.BuildState` gains `required = false` default parameter.
+- `ServiceCollectionExtensions` — registers `ILookupClient` (singleton, 5s timeout, cache enabled), `IEmailValidationService` (singleton), and `EmailNodeHandler` (scoped INodeHandler).
+
+**Email node — frontend**
+- `designer.ts` — added `'email'` to `ContactConnectionNodeType`; added `checkARecord?`, `checkMX?`, `checkDisposable?` to `NodeData` and `ContactConnectionNodeDef`; added email entry to `NODE_META` (cyan `#0891b2`, single handle); added email case to `defaultNodeData()` (MX + disposable checked by default).
+- `EmailNode.tsx` — new canvas node; cyan header; shows output variable with `{{flow.x}}` badge; shows active validation checks summary.
+- `FlowDesignerPage.tsx` — added `email: EmailNode` to `nodeTypes` map; added cyan to MiniMap color table.
+- `NodePalette.tsx` — added `'email'` to `NODE_TYPES` array.
+- `NodePropertiesPanel.tsx` — email case: output variable input with sub-property hint, required checkbox, and A/AAAA / MX / disposable checkboxes.
+- `NodeDisplay.tsx` — email case: `type="email"` input with cyan submit button; separate `handleEmailSubmit` passes `inputValue` directly (not `|| undefined`) so blank optional emails submit correctly.
+- `flow.ts` — added `'email'` to `nodeType` union; added `required?` to `FlowNodeState`; added `'email'` to `inputType` union.
+
+**Build:** 0 warnings, 0 errors (dotnet + Vite) ✓

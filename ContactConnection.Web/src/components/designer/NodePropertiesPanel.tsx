@@ -113,6 +113,64 @@ export default function NodePropertiesPanel({
           </>
         )
 
+      case 'email':
+        return (
+          <>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-400">Output variable</label>
+              <input
+                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
+                value={(data.outputVariable as string) ?? ''}
+                placeholder="customer_email"
+                onChange={(e) => onUpdate(node.id, { outputVariable: e.target.value })}
+              />
+              <p className="text-[10px] text-gray-500">
+                {(data.outputVariable as string)
+                  ? <>Sub-properties: <span className="font-mono text-cyan-400">{'{{flow.' + (data.outputVariable as string) + '.isDeliverable}}'}</span></>
+                  : 'Saves email + validation results as flow variables'}
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={(data.required as boolean) ?? false}
+                onChange={(e) => onUpdate(node.id, { required: e.target.checked })}
+              />
+              Required
+            </label>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-gray-400">Validation</p>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.checkARecord as boolean) ?? false}
+                  onChange={(e) => onUpdate(node.id, { checkARecord: e.target.checked })}
+                />
+                A / AAAA record check
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.checkMX as boolean) ?? true}
+                  onChange={(e) => onUpdate(node.id, { checkMX: e.target.checked })}
+                />
+                MX record check
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.checkDisposable as boolean) ?? true}
+                  onChange={(e) => onUpdate(node.id, { checkDisposable: e.target.checked })}
+                />
+                Disposable domain check
+              </label>
+            </div>
+            <p className="text-[10px] text-gray-500 leading-snug">
+              Format is always validated. Optional fields emit empty string when not checked.
+            </p>
+          </>
+        )
+
       case 'branch':
         return (
           <>

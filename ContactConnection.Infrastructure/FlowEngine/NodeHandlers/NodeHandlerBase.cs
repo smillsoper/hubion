@@ -32,17 +32,19 @@ public abstract class NodeHandlerBase
         bool isTerminal = false,
         List<FlowOption>? options = null,
         string? inputType = null,
-        string? condition = null) => new()
+        string? condition = null,
+        bool required = false) => new()
     {
-        SessionId   = ctx.SessionId,
-        NodeId      = ctx.CurrentNodeId,
-        NodeType    = StrReq(node, "type"),
-        Label       = Resolver.Resolve(Str(node, "label") ?? string.Empty, ctx.ToVariableContext()),
-        Content     = resolvedContent,
-        IsTerminal  = isTerminal,
-        Options     = options,
-        InputType   = inputType,
-        Condition   = condition,
+        SessionId    = ctx.SessionId,
+        NodeId       = ctx.CurrentNodeId,
+        NodeType     = StrReq(node, "type"),
+        Label        = Resolver.Resolve(Str(node, "label") ?? string.Empty, ctx.ToVariableContext()),
+        Content      = resolvedContent,
+        IsTerminal   = isTerminal,
+        Options      = options,
+        InputType    = inputType,
+        Condition    = condition,
+        Required     = required,
         LockedFields = [.. ctx.LockedFields]
     };
 

@@ -79,6 +79,9 @@ public class FlowNodeState
     /// <summary>Locked fields from commitment events — UI renders these as locked.</summary>
     public List<string> LockedFields { get; init; } = [];
 
+    /// <summary>Whether the field is required (email and input nodes).</summary>
+    public bool Required { get; init; }
+
     /// <summary>
     /// Resolved content from the script node immediately preceding this node (if any).
     /// The UI displays this above the current node so agent reads the script and fills the input together.

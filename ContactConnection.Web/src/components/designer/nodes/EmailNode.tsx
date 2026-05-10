@@ -1,0 +1,49 @@
+import type { NodeProps } from '@xyflow/react'
+import { Handle, Position } from '@xyflow/react'
+import NodeShell from './NodeShell'
+import type { NodeData } from '../../../types/designer'
+
+export default function EmailNode({ data, selected }: NodeProps & { data: NodeData }) {
+  const outputVariable = (data.outputVariable as string) ?? ''
+  const checkARecord   = data.checkARecord as boolean
+  const checkMX        = data.checkMX as boolean
+  const checkDisposable = data.checkDisposable as boolean
+
+  const checks = [
+    checkARecord   && 'A rec',
+    checkMX        && 'MX',
+    checkDisposable && 'disposable',
+  ].filter(Boolean).join(' · ')
+
+  return (
+    <NodeShell
+      type="email"
+      label={data.label as string}
+      isEntry={data.isEntry as boolean}
+      selected={selected}
+      sourceHandles={
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="default"
+          style={{ background: '#6b7280' }}
+        />
+      }
+    >
+      <p className="text-xs text-gray-400 mt-0.5">
+        email
+        {(data.required as boolean) && ' · required'}
+      </p>
+
+      {outputVariable && (
+        <p className="text-[10px] text-cyan-400 mt-0.5 font-mono truncate">
+          → {'{{flow.' + outputVariable + '}}'}
+        </p>
+      )}
+
+      {checks && (
+        <p className="text-[10px] text-gray-500 mt-0.5">validates: {checks}</p>
+      )}
+    </NodeShell>
+  )
+}

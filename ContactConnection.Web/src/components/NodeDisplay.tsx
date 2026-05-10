@@ -16,6 +16,14 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
     setInputValue('')
   }
 
+  function handleEmailSubmit(e: FormEvent) {
+    e.preventDefault()
+    // Always pass the value (even empty string) so the handler can distinguish
+    // "submitted blank" from "first display" — required check is backend-enforced
+    onAdvance(inputValue)
+    setInputValue('')
+  }
+
   if (node.nodeType === 'end') {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
@@ -105,6 +113,27 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
             className="self-start bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg px-5 py-2 text-sm font-medium transition-colors"
           >
             {advancing ? 'Advancing…' : 'Next'}
+          </button>
+        </form>
+      )}
+
+      {/* Email node */}
+      {node.nodeType === 'email' && (
+        <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+          <input
+            type="email"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Enter email address…"
+            required={node.required}
+            className="bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-cyan-500 border border-gray-700"
+          />
+          <button
+            type="submit"
+            disabled={advancing}
+            className="self-start bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white rounded-lg px-5 py-2 text-sm font-medium transition-colors"
+          >
+            {advancing ? 'Validating…' : 'Next'}
           </button>
         </form>
       )}

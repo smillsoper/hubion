@@ -4,6 +4,7 @@ import type { ContactConnectionNodeType } from '../../types/designer'
 const NODE_TYPES: ContactConnectionNodeType[] = [
   'script',
   'input',
+  'email',
   'branch',
   'set_variable',
   'api_call',

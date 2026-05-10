@@ -1,6 +1,7 @@
 export type ContactConnectionNodeType =
   | 'script'
   | 'input'
+  | 'email'
   | 'branch'
   | 'set_variable'
   | 'api_call'
@@ -16,6 +17,10 @@ export interface NodeData extends Record<string, unknown> {
   required?: boolean
   options?: string
   outputVariable?: string
+  // email
+  checkARecord?: boolean
+  checkMX?: boolean
+  checkDisposable?: boolean
   // branch
   condition?: string
   // set_variable
@@ -40,6 +45,9 @@ export interface ContactConnectionNodeDef {
   required?: boolean
   options?: FlowOption[]
   outputVariable?: string
+  checkARecord?: boolean
+  checkMX?: boolean
+  checkDisposable?: boolean
   condition?: string
   assignments?: { variable: string; value: string }[]
   method?: string
@@ -76,6 +84,12 @@ export const NODE_META: Record<
     description: 'Capture data from the agent',
     handles: 'custom',
   },
+  email: {
+    label: 'Email',
+    color: '#0891b2',
+    description: 'Capture and validate an email address',
+    handles: 'single',
+  },
   branch: {
     label: 'Branch',
     color: '#f59e0b',
@@ -108,6 +122,8 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
       return { label: 'New Script', content: '' }
     case 'input':
       return { label: 'New Input', fieldType: 'text', required: false, options: '', outputVariable: '' }
+    case 'email':
+      return { label: 'Email', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
     case 'branch':
       return { label: 'New Branch', condition: '' }
     case 'set_variable':

@@ -6,10 +6,11 @@ export interface FlowOption {
 export interface FlowNodeState {
   sessionId: string
   nodeId: string
-  nodeType: 'script' | 'input' | 'branch' | 'set_variable' | 'api_call' | 'end'
+  nodeType: 'script' | 'input' | 'email' | 'branch' | 'set_variable' | 'api_call' | 'end'
   label: string
   content?: string
-  inputType?: 'text' | 'select' | 'checkbox' | 'date' | 'address' | 'phone'
+  inputType?: 'text' | 'select' | 'checkbox' | 'date' | 'address' | 'phone' | 'email'
+  required?: boolean
   options?: FlowOption[]
   condition?: string
   isTerminal: boolean

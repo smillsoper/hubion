@@ -22,6 +22,7 @@ import NodePropertiesPanel from '../components/designer/NodePropertiesPanel'
 import EditableEdge from '../components/designer/EditableEdge'
 import ScriptNode from '../components/designer/nodes/ScriptNode'
 import InputNode from '../components/designer/nodes/InputNode'
+import EmailNode from '../components/designer/nodes/EmailNode'
 import BranchNode from '../components/designer/nodes/BranchNode'
 import SetVariableNode from '../components/designer/nodes/SetVariableNode'
 import ApiCallNode from '../components/designer/nodes/ApiCallNode'
@@ -33,6 +34,7 @@ import { defaultNodeData } from '../types/designer'
 const nodeTypes = {
   script: ScriptNode,
   input: InputNode,
+  email: EmailNode,
   branch: BranchNode,
   set_variable: SetVariableNode,
   api_call: ApiCallNode,
@@ -376,6 +378,7 @@ function DesignerCanvas({
               const meta: Record<string, string> = {
                 script: '#3b82f6',
                 input: '#10b981',
+                email: '#0891b2',
                 branch: '#f59e0b',
                 set_variable: '#8b5cf6',
                 api_call: '#6366f1',

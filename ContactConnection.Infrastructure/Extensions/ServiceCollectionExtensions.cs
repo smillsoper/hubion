@@ -7,8 +7,10 @@ using ContactConnection.Infrastructure.CustomFields;
 using ContactConnection.Infrastructure.Data;
 using ContactConnection.Infrastructure.FlowEngine;
 using ContactConnection.Infrastructure.FlowEngine.NodeHandlers;
+using ContactConnection.Infrastructure.FlowEngine.Services;
 using ContactConnection.Infrastructure.Repositories;
 using ContactConnection.Infrastructure.Tenants;
+using DnsClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,10 +73,20 @@ public static class ServiceCollectionExtensions
         // Variable resolver (singleton — stateless, thread-safe regex engine)
         services.AddSingleton<IVariableResolver, VariableResolver>();
 
+        // DNS client for email validation (singleton — thread-safe, connection-pooled)
+        services.AddSingleton<ILookupClient>(_ => new LookupClient(new LookupClientOptions
+        {
+            UseCache = true,
+            CacheFailedResults = false,
+            Timeout = TimeSpan.FromSeconds(5),
+        }));
+        services.AddSingleton<IEmailValidationService, EmailValidationService>();
+
         // Flow engine node handlers — each registered as INodeHandler so engine
         // receives IEnumerable<INodeHandler> and builds its dispatch dictionary
         services.AddScoped<INodeHandler, ScriptNodeHandler>();
         services.AddScoped<INodeHandler, InputNodeHandler>();
+        services.AddScoped<INodeHandler, EmailNodeHandler>();
         services.AddScoped<INodeHandler, BranchNodeHandler>();
         services.AddScoped<INodeHandler, SetVariableNodeHandler>();
         services.AddScoped<INodeHandler, ApiCallNodeHandler>();
