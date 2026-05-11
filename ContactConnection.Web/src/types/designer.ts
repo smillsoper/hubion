@@ -12,6 +12,9 @@ export interface NodeData extends Record<string, unknown> {
   isEntry?: boolean
   // script
   content?: string
+  // input / email shared script
+  scriptLabel?: string
+  scriptContent?: string
   // input
   fieldType?: string
   required?: boolean
@@ -41,6 +44,8 @@ export interface ContactConnectionNodeDef {
   type: ContactConnectionNodeType
   label: string
   content?: string
+  scriptLabel?: string
+  scriptContent?: string
   fieldType?: string
   required?: boolean
   options?: FlowOption[]
@@ -121,9 +126,9 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
     case 'script':
       return { label: 'New Script', content: '' }
     case 'input':
-      return { label: 'New Input', fieldType: 'text', required: false, options: '', outputVariable: '' }
+      return { label: 'New Input', scriptLabel: '', scriptContent: '', fieldType: 'text', required: false, options: '', outputVariable: '' }
     case 'email':
-      return { label: 'Email', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
+      return { label: 'Email', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
     case 'branch':
       return { label: 'New Branch', condition: '' }
     case 'set_variable':

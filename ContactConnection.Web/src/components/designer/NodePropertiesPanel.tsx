@@ -58,6 +58,32 @@ export default function NodePropertiesPanel({
     )
   }
 
+  function inlineScriptFields() {
+    return (
+      <>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-400">Script label</label>
+          <input
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
+            value={(data.scriptLabel as string) ?? ''}
+            placeholder="Instructions"
+            onChange={(e) => onUpdate(node.id, { scriptLabel: e.target.value })}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-gray-400">Script</label>
+          <ScriptContentEditor
+            key={`${node.id}-script`}
+            content={(data.scriptContent as string) ?? ''}
+            onUpdate={(html) => onUpdate(node.id, { scriptContent: html })}
+            dark
+          />
+        </div>
+        <div className="border-t border-gray-800 -mx-4 my-1" />
+      </>
+    )
+  }
+
   function typeSpecificFields() {
     switch (type) {
       case 'script':
@@ -73,6 +99,7 @@ export default function NodePropertiesPanel({
       case 'input':
         return (
           <>
+            {inlineScriptFields()}
             {field(
               'fieldType',
               'Field Type',
@@ -116,6 +143,7 @@ export default function NodePropertiesPanel({
       case 'email':
         return (
           <>
+            {inlineScriptFields()}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-400">Output variable</label>
               <input

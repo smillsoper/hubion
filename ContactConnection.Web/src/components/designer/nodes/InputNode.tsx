@@ -37,6 +37,10 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
     <Handle type="source" position={Position.Bottom} id="default" style={{ background: '#9ca3af' }} />
   )
 
+  const scriptLabel = (data.scriptLabel as string) ?? ''
+  const scriptContent = (data.scriptContent as string) ?? ''
+  const hasScript = scriptLabel || scriptContent
+
   return (
     <NodeShell
       type="input"
@@ -45,6 +49,11 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
       selected={selected}
       sourceHandles={sourceHandles}
     >
+      {hasScript && (
+        <p className="text-[10px] text-sky-400 mt-0.5 font-medium truncate">
+          📄 {scriptLabel || 'Script attached'}
+        </p>
+      )}
       <p className="text-xs text-gray-400 mt-0.5">
         {fieldType}
         {(data.required as boolean) && ' · required'}

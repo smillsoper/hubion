@@ -31,6 +31,17 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
 {
     public string NodeType => "email";
 
+    private void AttachInlineScript(JsonObject node, FlowExecutionContext ctx, FlowNodeState state)
+    {
+        var varCtx = ctx.ToVariableContext();
+        var scriptLabel   = Str(node, "scriptLabel");
+        var scriptContent = Str(node, "scriptContent");
+        if (!string.IsNullOrWhiteSpace(scriptLabel))
+            state.NodeScriptLabel = Resolver.Resolve(scriptLabel, varCtx);
+        if (!string.IsNullOrWhiteSpace(scriptContent))
+            state.NodeScriptContent = Resolver.Resolve(scriptContent, varCtx);
+    }
+
     private static string? GetValidationError(
         EmailValidationResult r, bool checkARecord, bool checkMX, bool checkDisposable)
     {
@@ -56,23 +67,20 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         var outputVar       = Str(node, "outputVariable")?.Trim() ?? string.Empty;
         var prompt          = Resolver.Resolve(Str(node, "prompt") ?? string.Empty, ctx.ToVariableContext());
 
+        FlowNodeState MakeState() => BuildState(ctx, node, resolvedContent: prompt,
+            inputType: "email", required: required);
+
+        FlowNodeState WithScript(FlowNodeState s) { AttachInlineScript(node, ctx, s); return s; }
+
         // First display (no input yet)
         if (agentInput is null)
-        {
-            var display = BuildState(ctx, node, resolvedContent: prompt,
-                inputType: "email", required: required);
-            return new NodeResult(display, NextNodeId: null);
-        }
+            return new NodeResult(WithScript(MakeState()), NextNodeId: null);
 
         var email = agentInput.Trim();
 
         // Required guard — re-display if blank
         if (required && string.IsNullOrEmpty(email))
-        {
-            var display = BuildState(ctx, node, resolvedContent: prompt,
-                inputType: "email", required: required);
-            return new NodeResult(display, NextNodeId: null);
-        }
+            return new NodeResult(WithScript(MakeState()), NextNodeId: null);
 
         // Blank optional — store all vars empty and advance
         if (string.IsNullOrEmpty(email))
@@ -89,8 +97,7 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
 
             var next = Transition(node, agentTransition) ?? Transition(node, "default");
             AppendHistory(ctx, node, email, next);
-            return new NodeResult(BuildState(ctx, node, resolvedContent: prompt,
-                inputType: "email", required: required), next);
+            return new NodeResult(WithScript(MakeState()), next);
         }
 
         // Non-blank email — validate and block on any failed check
@@ -115,8 +122,7 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         var validationError = GetValidationError(validationResult, checkARecord, checkMX, checkDisposable);
         if (validationError is not null)
         {
-            var errorState = BuildState(ctx, node, resolvedContent: prompt,
-                inputType: "email", required: required);
+            var errorState = WithScript(MakeState());
             errorState.ValidationError = validationError;
             return new NodeResult(errorState, NextNodeId: null);
         }
@@ -124,7 +130,6 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         // All checks passed — advance
         var advanceNext = Transition(node, agentTransition) ?? Transition(node, "default");
         AppendHistory(ctx, node, email, advanceNext);
-        return new NodeResult(BuildState(ctx, node, resolvedContent: prompt,
-            inputType: "email", required: required), advanceNext);
+        return new NodeResult(WithScript(MakeState()), advanceNext);
     }
 }

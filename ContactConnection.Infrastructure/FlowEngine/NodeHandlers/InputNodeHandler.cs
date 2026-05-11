@@ -54,13 +54,26 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
 
             var advancedState = BuildState(ctx, node, resolvedContent: prompt,
                 inputType: inputType, options: ParseOptions(node));
+            AttachInlineScript(node, ctx, advancedState);
             return Task.FromResult(new NodeResult(advancedState, next));
         }
 
         // No input yet — return the node for display (agent must submit before advancing)
         var displayState = BuildState(ctx, node, resolvedContent: prompt,
             inputType: inputType, options: ParseOptions(node));
+        AttachInlineScript(node, ctx, displayState);
         return Task.FromResult(new NodeResult(displayState, NextNodeId: null));
+    }
+
+    private void AttachInlineScript(JsonObject node, FlowExecutionContext ctx, FlowNodeState state)
+    {
+        var varCtx = ctx.ToVariableContext();
+        var scriptLabel   = Str(node, "scriptLabel");
+        var scriptContent = Str(node, "scriptContent");
+        if (!string.IsNullOrWhiteSpace(scriptLabel))
+            state.NodeScriptLabel = Resolver.Resolve(scriptLabel, varCtx);
+        if (!string.IsNullOrWhiteSpace(scriptContent))
+            state.NodeScriptContent = Resolver.Resolve(scriptContent, varCtx);
     }
 
     private static List<FlowOption>? ParseOptions(JsonObject node)

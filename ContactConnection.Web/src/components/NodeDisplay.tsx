@@ -58,6 +58,19 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
         />
       )}
 
+      {/* Inline script (embedded on input/email nodes) */}
+      {node.nodeScriptLabel && (
+        <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+          {node.nodeScriptLabel}
+        </p>
+      )}
+      {node.nodeScriptContent && (
+        <div
+          className="script-content bg-gray-900 rounded-xl p-5 text-gray-100 text-sm leading-relaxed border border-gray-800"
+          dangerouslySetInnerHTML={{ __html: node.nodeScriptContent }}
+        />
+      )}
+
       {/* Step label */}
       <div className="flex items-center gap-2">
         <span className="text-xs uppercase tracking-wider text-gray-500 font-medium">

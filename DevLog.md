@@ -33,6 +33,7 @@
 | 21 | 2026-05-07 | 5:58 AM CDT | 6:09 AM CDT | 11 min | ~919 min |
 | 22 | 2026-05-08 | 4:54 AM CDT | 5:25 AM CDT | 31 min | ~950 min |
 | 23 | 2026-05-10 | 1:11 PM CDT | 1:55 PM CDT | 44 min | ~994 min |
+| 24 | 2026-05-11 | 4:55 AM PDT | 5:06 AM PDT | 11 min | ~1005 min |
 
 ---
 
@@ -1351,3 +1352,21 @@ Continuation of Session 20 work — session was still in progress when the user 
 - `flow.ts` — added `'email'` to `nodeType` union; added `required?` to `FlowNodeState`; added `'email'` to `inputType` union.
 
 **Build:** 0 warnings, 0 errors (dotnet + Vite) ✓
+
+---
+
+## Session 24 — Inline Script on Input and Email Nodes
+
+**Date:** 2026-05-11
+**Start:** 4:55 AM PDT
+**End:** 5:06 AM PDT
+**Duration:** 11 minutes
+**Cumulative Total:** ~1005 min
+
+### Accomplished
+
+- Added `scriptLabel` and `scriptContent` properties to both input and email flow nodes.
+- **Backend** — `FlowNodeState` gains `NodeScriptLabel` and `NodeScriptContent` (`string?`, settable); both `InputNodeHandler` and `EmailNodeHandler` read these from the node JSON, resolve variable tags via `IVariableResolver`, and attach them to every returned state via a shared `AttachInlineScript` helper.
+- **Frontend** — `designer.ts`: `scriptLabel?` + `scriptContent?` added to `NodeData`, `ContactConnectionNodeDef`, and `defaultNodeData` for input and email; `flow.ts`: `nodeScriptLabel?` + `nodeScriptContent?` added to `FlowNodeState`; `NodePropertiesPanel.tsx`: shared `inlineScriptFields()` helper renders a script label input + `ScriptContentEditor` (dark) above the type-specific fields for both input and email, separated by a divider; `InputNode.tsx` + `EmailNode.tsx`: show a sky-blue "📄 {label}" badge on the canvas card when a script is attached; `NodeDisplay.tsx`: renders Script Label → Script → step label → input field in the agent UI.
+
+**Build:** 0 warnings, 0 errors ✓

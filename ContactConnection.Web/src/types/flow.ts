@@ -12,6 +12,8 @@ export interface FlowNodeState {
   inputType?: 'text' | 'select' | 'checkbox' | 'date' | 'address' | 'phone' | 'email'
   required?: boolean
   validationError?: string
+  nodeScriptLabel?: string
+  nodeScriptContent?: string
   options?: FlowOption[]
   condition?: string
   isTerminal: boolean

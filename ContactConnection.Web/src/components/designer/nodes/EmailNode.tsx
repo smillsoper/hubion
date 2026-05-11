@@ -4,10 +4,13 @@ import NodeShell from './NodeShell'
 import type { NodeData } from '../../../types/designer'
 
 export default function EmailNode({ data, selected }: NodeProps & { data: NodeData }) {
-  const outputVariable = (data.outputVariable as string) ?? ''
-  const checkARecord   = data.checkARecord as boolean
-  const checkMX        = data.checkMX as boolean
+  const outputVariable  = (data.outputVariable as string) ?? ''
+  const checkARecord    = data.checkARecord as boolean
+  const checkMX         = data.checkMX as boolean
   const checkDisposable = data.checkDisposable as boolean
+  const scriptLabel     = (data.scriptLabel as string) ?? ''
+  const scriptContent   = (data.scriptContent as string) ?? ''
+  const hasScript       = scriptLabel || scriptContent
 
   const checks = [
     checkARecord   && 'A rec',
@@ -30,6 +33,11 @@ export default function EmailNode({ data, selected }: NodeProps & { data: NodeDa
         />
       }
     >
+      {hasScript && (
+        <p className="text-[10px] text-sky-400 mt-0.5 font-medium truncate">
+          📄 {scriptLabel || 'Script attached'}
+        </p>
+      )}
       <p className="text-xs text-gray-400 mt-0.5">
         email
         {(data.required as boolean) && ' · required'}

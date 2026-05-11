@@ -85,6 +85,12 @@ public class FlowNodeState
     /// <summary>Validation error to display inline — set when the node re-displays after a failed check.</summary>
     public string? ValidationError { get; set; }
 
+    /// <summary>Label for the node's own inline script (shown above the script content).</summary>
+    public string? NodeScriptLabel { get; set; }
+
+    /// <summary>Resolved rich-text script content embedded directly on an input/email node.</summary>
+    public string? NodeScriptContent { get; set; }
+
     /// <summary>
     /// Resolved content from the script node immediately preceding this node (if any).
     /// The UI displays this above the current node so agent reads the script and fills the input together.
