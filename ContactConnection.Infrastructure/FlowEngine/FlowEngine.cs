@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using ContactConnection.Application.Interfaces.Repositories;
 using ContactConnection.Application.Interfaces.Services;
 using ContactConnection.Application.Services;
+using ContactConnection.Domain.Entities;
 using ContactConnection.Infrastructure.FlowEngine.NodeHandlers;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
