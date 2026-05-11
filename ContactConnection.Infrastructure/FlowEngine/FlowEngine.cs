@@ -3,7 +3,6 @@ using System.Text.Json.Nodes;
 using ContactConnection.Application.Interfaces.Repositories;
 using ContactConnection.Application.Interfaces.Services;
 using ContactConnection.Application.Services;
-using ContactConnection.Domain.Entities;
 using ContactConnection.Infrastructure.FlowEngine.NodeHandlers;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -25,6 +24,7 @@ public class FlowEngine : IFlowEngine
 {
     private readonly IFlowRepository _flows;
     private readonly IFlowSessionRepository _sessions;
+    private readonly IAgentRepository _agents;
     private readonly IDatabase _redis;
     private readonly TenantContext _tenantContext;
     private readonly IFlowNotifier _notifier;
@@ -40,6 +40,7 @@ public class FlowEngine : IFlowEngine
     public FlowEngine(
         IFlowRepository flows,
         IFlowSessionRepository sessions,
+        IAgentRepository agents,
         IConnectionMultiplexer redis,
         TenantContext tenantContext,
         IFlowNotifier notifier,
@@ -48,6 +49,7 @@ public class FlowEngine : IFlowEngine
     {
         _flows         = flows;
         _sessions      = sessions;
+        _agents        = agents;
         _redis         = redis.GetDatabase();
         _tenantContext = tenantContext;
         _notifier      = notifier;
@@ -81,7 +83,19 @@ public class FlowEngine : IFlowEngine
         await _sessions.AddAsync(session, ct);
         await _sessions.SaveChangesAsync(ct);
 
-        var ctx   = BuildContext(session, definition, request);
+        var ctx = BuildContext(session, definition, request);
+
+        // Populate agent context from database so {{agent.*}} tags resolve correctly
+        var agent = await _agents.GetByIdAsync(request.AgentId, ct);
+        if (agent is not null)
+        {
+            ctx.Agent["id"]         = agent.Id.ToString();
+            ctx.Agent["first_name"] = agent.FirstName;
+            ctx.Agent["last_name"]  = agent.LastName;
+            ctx.Agent["full_name"]  = agent.FullName;
+            ctx.Agent["email"]      = agent.Email;
+        }
+
         var state = await AdvanceInternalAsync(ctx, entryNodeId, agentInput: null, transition: "default", isStart: true, ct);
 
         // Save ctx AFTER advance so CurrentNodeId reflects where the engine stopped,

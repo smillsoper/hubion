@@ -39,7 +39,32 @@ public class SetVariableNodeHandler(IVariableResolver resolver) : NodeHandlerBas
 
                 if (variable is null || template is null) continue;
 
-                ctx.FlowVars[variable] = Resolver.Resolve(template, varCtx);
+                var resolvedValue = Resolver.Resolve(template, varCtx);
+
+                // Strip {{...}} wrapper if the variable name was entered as a tag
+                var targetKey = variable.Trim();
+                if (targetKey.StartsWith("{{") && targetKey.EndsWith("}}"))
+                    targetKey = targetKey[2..^2].Trim();
+
+                // Dispatch to the correct namespace context dictionary
+                var dotIndex = targetKey.IndexOf('.');
+                if (dotIndex > 0)
+                {
+                    var ns  = targetKey[..dotIndex].ToLowerInvariant();
+                    var key = targetKey[(dotIndex + 1)..];
+                    switch (ns)
+                    {
+                        case "caller": ctx.Caller[key]   = resolvedValue; break;
+                        case "agent":  ctx.Agent[key]    = resolvedValue; break;
+                        case "tenant": ctx.Tenant[key]   = resolvedValue; break;
+                        case "flow":   ctx.FlowVars[key] = resolvedValue; break;
+                        default:       ctx.FlowVars[targetKey] = resolvedValue; break;
+                    }
+                }
+                else
+                {
+                    ctx.FlowVars[targetKey] = resolvedValue;
+                }
             }
         }
 
