@@ -34,6 +34,7 @@
 | 22 | 2026-05-08 | 4:54 AM CDT | 5:25 AM CDT | 31 min | ~950 min |
 | 23 | 2026-05-10 | 1:11 PM CDT | 1:55 PM CDT | 44 min | ~994 min |
 | 24 | 2026-05-11 | 4:55 AM PDT | 5:06 AM PDT | 11 min | ~1005 min |
+| 25 | 2026-05-11 | 5:06 AM PDT | 5:24 AM PDT | 18 min | ~1023 min |
 
 ---
 
@@ -1368,5 +1369,29 @@ Continuation of Session 20 work — session was still in progress when the user 
 - Added `scriptLabel` and `scriptContent` properties to both input and email flow nodes.
 - **Backend** — `FlowNodeState` gains `NodeScriptLabel` and `NodeScriptContent` (`string?`, settable); both `InputNodeHandler` and `EmailNodeHandler` read these from the node JSON, resolve variable tags via `IVariableResolver`, and attach them to every returned state via a shared `AttachInlineScript` helper.
 - **Frontend** — `designer.ts`: `scriptLabel?` + `scriptContent?` added to `NodeData`, `ContactConnectionNodeDef`, and `defaultNodeData` for input and email; `flow.ts`: `nodeScriptLabel?` + `nodeScriptContent?` added to `FlowNodeState`; `NodePropertiesPanel.tsx`: shared `inlineScriptFields()` helper renders a script label input + `ScriptContentEditor` (dark) above the type-specific fields for both input and email, separated by a divider; `InputNode.tsx` + `EmailNode.tsx`: show a sky-blue "📄 {label}" badge on the canvas card when a script is attached; `NodeDisplay.tsx`: renders Script Label → Script → step label → input field in the agent UI.
+
+**Build:** 0 warnings, 0 errors ✓
+
+---
+
+## Session 25 — Variable Resolution Fixes
+
+**Date:** 2026-05-11
+**Start:** 5:06 AM PDT
+**End:** 5:24 AM PDT
+**Duration:** 18 minutes
+**Cumulative Total:** ~1023 min
+
+### Accomplished
+
+**`{{agent.*}}` variable resolution**
+- `FlowEngine.StartAsync` now loads the agent record from `IAgentRepository` after building the session context and populates `ctx.Agent` with `id`, `first_name`, `last_name`, `full_name`, and `email`. Previously only `id` was set, so `{{agent.first_name}}` always resolved to blank.
+- `IAgentRepository` injected into `FlowEngine` constructor.
+
+**`SetVariableNodeHandler` — namespace-aware assignment**
+- Handler now strips `{{...}}` wrappers from variable names (so `{{caller.first_name}}` works as the target) and dispatches to the correct context dictionary by namespace prefix: `caller` → `ctx.Caller`, `agent` → `ctx.Agent`, `tenant` → `ctx.Tenant`, `flow` → `ctx.FlowVars`. Previously all assignments wrote to `ctx.FlowVars` with the literal `{{caller.first_name}}` as the key, so downstream `{{caller.*}}` tags never resolved.
+
+**Bug fix — missing using directive**
+- `FlowEngine.cs` was missing `using ContactConnection.Domain.Entities` after a prior edit removed it; caused `FlowSession` type not found at build time.
 
 **Build:** 0 warnings, 0 errors ✓
