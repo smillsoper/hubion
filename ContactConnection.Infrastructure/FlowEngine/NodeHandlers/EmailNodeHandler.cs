@@ -31,6 +31,20 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
 {
     public string NodeType => "email";
 
+    private static string? GetValidationError(
+        EmailValidationResult r, bool checkARecord, bool checkMX, bool checkDisposable)
+    {
+        if (!r.IsFormatValid)
+            return "Invalid email format. Please check and try again.";
+        if (checkARecord && r.DomainExists == false)
+            return "That email domain does not exist. Please check and try again.";
+        if (checkMX && r.MXExists == false)
+            return "That email domain has no mail server. Please use a valid email address.";
+        if (checkDisposable && r.IsDisposable == true)
+            return "Disposable email addresses are not accepted. Please use a permanent email address.";
+        return null;
+    }
+
     public async Task<NodeResult> ExecuteAsync(
         JsonObject node, FlowExecutionContext ctx,
         string? agentInput, string agentTransition, CancellationToken ct = default)
@@ -60,12 +74,11 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
             return new NodeResult(display, NextNodeId: null);
         }
 
-        // Store sub-property variables
-        if (!string.IsNullOrEmpty(outputVar))
+        // Blank optional — store all vars empty and advance
+        if (string.IsNullOrEmpty(email))
         {
-            if (string.IsNullOrEmpty(email))
+            if (!string.IsNullOrEmpty(outputVar))
             {
-                // Blank optional — store empty / false for all sub-props
                 ctx.FlowVars[outputVar]                      = string.Empty;
                 ctx.FlowVars[$"{outputVar}.isFormatValid"]   = "false";
                 ctx.FlowVars[$"{outputVar}.DomainExists"]    = string.Empty;
@@ -73,28 +86,45 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
                 ctx.FlowVars[$"{outputVar}.isDisposable"]    = string.Empty;
                 ctx.FlowVars[$"{outputVar}.isDeliverable"]   = "false";
             }
-            else
-            {
-                var result = await emailValidator.ValidateAsync(
-                    email, checkARecord, checkMX, checkDisposable, ct);
 
-                ctx.FlowVars[outputVar]                      = email;
-                ctx.FlowVars[$"{outputVar}.isFormatValid"]   = result.IsFormatValid ? "true" : "false";
-                ctx.FlowVars[$"{outputVar}.DomainExists"]    = result.DomainExists.HasValue
-                    ? (result.DomainExists.Value ? "true" : "false") : string.Empty;
-                ctx.FlowVars[$"{outputVar}.MXExists"]        = result.MXExists.HasValue
-                    ? (result.MXExists.Value ? "true" : "false") : string.Empty;
-                ctx.FlowVars[$"{outputVar}.isDisposable"]    = result.IsDisposable.HasValue
-                    ? (result.IsDisposable.Value ? "true" : "false") : string.Empty;
-                ctx.FlowVars[$"{outputVar}.isDeliverable"]   = result.IsDeliverable ? "true" : "false";
-            }
+            var next = Transition(node, agentTransition) ?? Transition(node, "default");
+            AppendHistory(ctx, node, email, next);
+            return new NodeResult(BuildState(ctx, node, resolvedContent: prompt,
+                inputType: "email", required: required), next);
         }
 
-        var next = Transition(node, agentTransition) ?? Transition(node, "default");
-        AppendHistory(ctx, node, email, next);
+        // Non-blank email — validate and block on any failed check
+        var validationResult = await emailValidator.ValidateAsync(
+            email, checkARecord, checkMX, checkDisposable, ct);
 
-        var state = BuildState(ctx, node, resolvedContent: prompt,
-            inputType: "email", required: required);
-        return new NodeResult(state, next);
+        // Store vars regardless so downstream branch nodes can use them
+        if (!string.IsNullOrEmpty(outputVar))
+        {
+            ctx.FlowVars[outputVar]                      = email;
+            ctx.FlowVars[$"{outputVar}.isFormatValid"]   = validationResult.IsFormatValid ? "true" : "false";
+            ctx.FlowVars[$"{outputVar}.DomainExists"]    = validationResult.DomainExists.HasValue
+                ? (validationResult.DomainExists.Value ? "true" : "false") : string.Empty;
+            ctx.FlowVars[$"{outputVar}.MXExists"]        = validationResult.MXExists.HasValue
+                ? (validationResult.MXExists.Value ? "true" : "false") : string.Empty;
+            ctx.FlowVars[$"{outputVar}.isDisposable"]    = validationResult.IsDisposable.HasValue
+                ? (validationResult.IsDisposable.Value ? "true" : "false") : string.Empty;
+            ctx.FlowVars[$"{outputVar}.isDeliverable"]   = validationResult.IsDeliverable ? "true" : "false";
+        }
+
+        // Determine error message for the first failing check
+        var validationError = GetValidationError(validationResult, checkARecord, checkMX, checkDisposable);
+        if (validationError is not null)
+        {
+            var errorState = BuildState(ctx, node, resolvedContent: prompt,
+                inputType: "email", required: required);
+            errorState.ValidationError = validationError;
+            return new NodeResult(errorState, NextNodeId: null);
+        }
+
+        // All checks passed — advance
+        var advanceNext = Transition(node, agentTransition) ?? Transition(node, "default");
+        AppendHistory(ctx, node, email, advanceNext);
+        return new NodeResult(BuildState(ctx, node, resolvedContent: prompt,
+            inputType: "email", required: required), advanceNext);
     }
 }

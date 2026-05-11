@@ -8,7 +8,7 @@ DevLog.md needs to be updated every session with the session start date and time
 
 ## Current Project Status
 
-**As of:** 2026-05-10 (Session 23 in progress)
+**As of:** 2026-05-10 (Session 23 complete)
 
 ### Solution Structure
 
@@ -279,7 +279,7 @@ Building the **full ContactConnection platform** — not releasing ContactConnec
 3. **ContactConnection.Web — Script Node Editor** ✓ Complete (Session 18)
 4. **ContactConnection.Web — Flow Designer enhancements** ✓ Complete (Session 19): variable panel in script editor modal, input node per-option handles, output variable field, Flows management page (`/flows`)
 5. **ContactConnection.Web — UI polish + dark theme** ✓ Complete (Sessions 20-22): tagline branding, login page styling, dark theme throughout Flows/Designer, canvas node dark theme, navbar logo flush layout
-6. **ContactConnection.Web — Specialized flow nodes** (Session 23 in progress): Email node with DNS validation ✓
+6. **ContactConnection.Web — Specialized flow nodes** ✓ Complete (Session 23): Email node with DNS validation, blocking on failed checks, inline error messages
 7. **Chrome Extension** (web automation bridge) ← next after specialized nodes complete
 4. **FreeSWITCH + Telephony** (ESL, parallel queue engine, screen pop)
 5. **ContactConnection.Integrations + API Builder** (no-code adapter framework)

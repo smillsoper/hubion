@@ -120,6 +120,11 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
       {/* Email node */}
       {node.nodeType === 'email' && (
         <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+          {node.validationError && (
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg px-3 py-2">
+              {node.validationError}
+            </p>
+          )}
           <input
             type="email"
             value={inputValue}

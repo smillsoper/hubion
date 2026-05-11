@@ -82,6 +82,9 @@ public class FlowNodeState
     /// <summary>Whether the field is required (email and input nodes).</summary>
     public bool Required { get; init; }
 
+    /// <summary>Validation error to display inline — set when the node re-displays after a failed check.</summary>
+    public string? ValidationError { get; set; }
+
     /// <summary>
     /// Resolved content from the script node immediately preceding this node (if any).
     /// The UI displays this above the current node so agent reads the script and fills the input together.
