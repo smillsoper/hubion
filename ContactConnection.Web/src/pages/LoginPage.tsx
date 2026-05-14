@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import { authApi } from '../api/auth'
@@ -12,6 +12,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Splash: 'splash' → 'fading' (CSS transition) → 'done'
+  const [splash, setSplash] = useState<'splash' | 'fading' | 'done'>('splash')
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setSplash('fading'), 4400)   // start fade at 4.4s
+    const doneTimer = setTimeout(() => setSplash('done'),  5000)    // remove at 5s
+    return () => { clearTimeout(fadeTimer); clearTimeout(doneTimer) }
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -30,7 +39,38 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
-      <div className="w-full max-w-sm bg-gray-900 rounded-2xl shadow-xl p-8">
+
+      {/* ── Splash screen ── */}
+      {splash !== 'done' && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-950 gap-6"
+          style={{
+            transition: 'opacity 0.6s ease',
+            opacity: splash === 'fading' ? 0 : 1,
+            pointerEvents: 'none',
+          }}
+        >
+          <img src="/cc-logo-dark.svg" alt="Contact Connection" className="h-24" />
+          <p className="text-white text-2xl font-light tracking-wide">Call Center Solutions, LLC</p>
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <p className="text-gray-400 text-sm tracking-wide">
+              <span style={{ color: '#38BDF8' }}>CEO:</span> William Soper
+            </p>
+            <p className="text-gray-400 text-sm tracking-wide">
+              <span style={{ color: '#38BDF8' }}>Engineer:</span> Stephen Soper
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Login card ── */}
+      <div
+        className="w-full max-w-sm bg-gray-900 rounded-2xl shadow-xl p-8"
+        style={{
+          transition: 'opacity 0.6s ease',
+          opacity: splash === 'done' ? 1 : 0,
+        }}
+      >
         <div className="flex flex-col items-center mb-7">
           <img src="/cc-logo-dark.svg" alt="Contact Connection" className="h-14 mb-4" />
           <p className="text-white font-medium" style={{ fontSize: 18 }}>Sign In</p>
@@ -44,7 +84,6 @@ export default function LoginPage() {
               required
               value={subdomain}
               onChange={(e) => setSubdomain(e.target.value)}
-
               className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
