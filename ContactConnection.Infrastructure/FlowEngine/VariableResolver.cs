@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using ContactConnection.Application.Interfaces.Services;
 
@@ -60,6 +61,32 @@ public partial class VariableResolver : IVariableResolver
 
     // ── Private helpers ────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Resolves a flow variable key, supporting dot-notation access into stored JSON objects.
+    /// "phone" → returns the raw JSON string stored under "phone"
+    /// "phone.isTollFree" → parses the JSON under "phone" and extracts ["isTollFree"]
+    /// </summary>
+    private static string? ResolveFlowVar(string key, VariableContext context)
+    {
+        if (context.FlowVars.TryGetValue(key, out var direct))
+            return direct;
+
+        var dotIdx = key.IndexOf('.');
+        if (dotIdx <= 0) return null;
+
+        var objKey = key[..dotIdx];
+        var prop   = key[(dotIdx + 1)..];
+        if (!context.FlowVars.TryGetValue(objKey, out var json)) return null;
+
+        try
+        {
+            var node = JsonNode.Parse(json);
+            var val  = node?[prop];
+            return val is null ? null : val.ToString();
+        }
+        catch { return null; }
+    }
+
     private string? ResolveTag(string tag, VariableContext context)
     {
         // Split on first dot only for namespace extraction
@@ -75,7 +102,7 @@ public partial class VariableResolver : IVariableResolver
             "caller"      => context.Caller.GetValueOrDefault(key),
             "agent"       => context.Agent.GetValueOrDefault(key),
             "tenant"      => context.Tenant.GetValueOrDefault(key),
-            "flow"        => context.FlowVars.GetValueOrDefault(key),
+            "flow"        => ResolveFlowVar(key, context),
             "input"       => context.Inputs.GetValueOrDefault(key),
             "api"         => context.ApiResults.GetValueOrDefault(key),
             _             => null

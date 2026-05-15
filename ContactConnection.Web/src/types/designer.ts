@@ -2,6 +2,7 @@ export type ContactConnectionNodeType =
   | 'script'
   | 'input'
   | 'email'
+  | 'phone'
   | 'branch'
   | 'set_variable'
   | 'api_call'
@@ -28,6 +29,9 @@ export interface NodeData extends Record<string, unknown> {
   checkARecord?: boolean
   checkMX?: boolean
   checkDisposable?: boolean
+  // phone
+  allowInternational?: boolean
+  dncCheck?: boolean
   // branch
   condition?: string
   // set_variable
@@ -61,6 +65,8 @@ export interface ContactConnectionNodeDef {
   checkARecord?: boolean
   checkMX?: boolean
   checkDisposable?: boolean
+  allowInternational?: boolean
+  dncCheck?: boolean
   condition?: string
   assignments?: { variable: string; value: string }[]
   method?: string
@@ -103,6 +109,12 @@ export const NODE_META: Record<
     description: 'Capture and validate an email address',
     handles: 'single',
   },
+  phone: {
+    label: 'Phone',
+    color: '#0d9488',
+    description: 'Capture and validate a phone number',
+    handles: 'single',
+  },
   branch: {
     label: 'Branch',
     color: '#f59e0b',
@@ -137,6 +149,8 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
       return { label: 'New Input', scriptLabel: '', scriptContent: '', fieldType: 'text', required: false, options: '', outputVariable: '', minChars: undefined, maxChars: undefined, inputMask: '', customMask: '' }
     case 'email':
       return { label: 'Email', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
+    case 'phone':
+      return { label: 'Phone Number', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, allowInternational: false, dncCheck: false }
     case 'branch':
       return { label: 'New Branch', condition: '' }
     case 'set_variable':

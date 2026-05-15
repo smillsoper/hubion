@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FlowAncestorVars } from '../../utils/flowGraph'
+import type { FlowAncestorVars, FlowVarToken } from '../../utils/flowGraph'
 
 interface StaticField { key: string }
 
@@ -194,14 +194,33 @@ export default function VariablePanel({ onInsert, flowVars, dark }: Props) {
         <Section ns="flow" label="flow" badge={flowVars ? 'flow' : 'dynamic'}>
           {flowVars ? (
             flowVars.flowVars.length > 0 ? (
-              flowVars.flowVars.map((v) => (
-                <Token
-                  key={v.key}
-                  token={`{{flow.${v.key}}}`}
-                  display={v.key}
-                  note={v.label}
-                />
-              ))
+              flowVars.flowVars.map((v: FlowVarToken) =>
+                v.isObject ? (
+                  <div key={v.key}>
+                    {/* Object header — non-clickable; accessing the root would return raw JSON */}
+                    <div className={`px-7 py-0.5 flex items-center gap-1.5 text-[11px] font-mono ${subText}`}>
+                      {v.key}
+                      <span className={`text-[9px] px-1 py-px rounded font-sans font-medium ${dynBadge}`}>obj</span>
+                      {v.label && <span className={`text-[9px] font-sans not-italic ml-0.5 ${subText}`}>{v.label}</span>}
+                    </div>
+                    {v.properties?.map((p) => (
+                      <Token
+                        key={p.key}
+                        token={`{{flow.${v.key}.${p.key}}}`}
+                        display={`  .${p.key}`}
+                        note={p.label}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Token
+                    key={v.key}
+                    token={`{{flow.${v.key}}}`}
+                    display={v.key}
+                    note={v.label}
+                  />
+                )
+              )
             ) : (
               <p className={`px-7 py-1 text-[10px] italic ${emptyTxt}`}>
                 No flow variables set before this node.

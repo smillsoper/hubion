@@ -240,6 +240,37 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
         </form>
       )}
 
+      {/* Phone node */}
+      {node.nodeType === 'phone' && (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {node.validationError && (
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg px-3 py-2">
+              {node.validationError}
+            </p>
+          )}
+          <input
+            ref={(el) => { focusRef.current = el }}
+            type="text"
+            value={inputValue}
+            onChange={(e) => handleTextChange(e.target.value)}
+            placeholder={node.inputMask ?? 'Enter phone number…'}
+            className="bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-teal border border-gray-700 font-mono"
+          />
+          {localError && (
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg px-3 py-2">
+              {localError}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={advancing}
+            className="self-start bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white rounded-lg px-5 py-2 text-sm font-medium transition-colors"
+          >
+            {advancing ? 'Validating…' : 'Next'}
+          </button>
+        </form>
+      )}
+
       {/* Email node */}
       {node.nodeType === 'email' && (
         <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">

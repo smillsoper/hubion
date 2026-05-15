@@ -18,13 +18,14 @@ namespace ContactConnection.Infrastructure.FlowEngine.NodeHandlers;
 ///   "transitions": { "default": "node_002" }
 /// }
 ///
-/// Emits flat-key flow variables (resolved via {{flow.customer_email.isDeliverable}}):
-///   {outputVar}              = the raw email value
-///   {outputVar}.isFormatValid
-///   {outputVar}.DomainExists   (empty string if checkARecord=false)
-///   {outputVar}.MXExists       (empty string if checkMX=false)
-///   {outputVar}.isDisposable   (empty string if checkDisposable=false)
-///   {outputVar}.isDeliverable
+/// Stores output as a JSON object in FlowVars under the outputVariable key.
+/// Sub-properties resolved via {{flow.customer_email.isDeliverable}} etc.:
+///   value           = the raw email string
+///   isFormatValid   = true/false
+///   domainExists    = true/false/null (null when checkARecord=false)
+///   mxExists        = true/false/null (null when checkMX=false)
+///   isDisposable    = true/false/null (null when checkDisposable=false)
+///   isDeliverable   = true/false
 /// </summary>
 public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationService emailValidator)
     : NodeHandlerBase(resolver), INodeHandler
@@ -82,18 +83,12 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         if (required && string.IsNullOrEmpty(email))
             return new NodeResult(WithScript(MakeState()), NextNodeId: null);
 
-        // Blank optional — store all vars empty and advance
+        // Blank optional — store empty object and advance
         if (string.IsNullOrEmpty(email))
         {
             if (!string.IsNullOrEmpty(outputVar))
-            {
-                ctx.FlowVars[outputVar]                      = string.Empty;
-                ctx.FlowVars[$"{outputVar}.isFormatValid"]   = "false";
-                ctx.FlowVars[$"{outputVar}.DomainExists"]    = string.Empty;
-                ctx.FlowVars[$"{outputVar}.MXExists"]        = string.Empty;
-                ctx.FlowVars[$"{outputVar}.isDisposable"]    = string.Empty;
-                ctx.FlowVars[$"{outputVar}.isDeliverable"]   = "false";
-            }
+                ctx.FlowVars[outputVar] = BuildEmailObject(
+                    string.Empty, false, null, null, null, false).ToJsonString();
 
             var next = Transition(node, agentTransition) ?? Transition(node, "default");
             AppendHistory(ctx, node, email, next);
@@ -104,19 +99,15 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         var validationResult = await emailValidator.ValidateAsync(
             email, checkARecord, checkMX, checkDisposable, ct);
 
-        // Store vars regardless so downstream branch nodes can use them
+        // Store as JSON object regardless so downstream branch nodes can use sub-properties
         if (!string.IsNullOrEmpty(outputVar))
-        {
-            ctx.FlowVars[outputVar]                      = email;
-            ctx.FlowVars[$"{outputVar}.isFormatValid"]   = validationResult.IsFormatValid ? "true" : "false";
-            ctx.FlowVars[$"{outputVar}.DomainExists"]    = validationResult.DomainExists.HasValue
-                ? (validationResult.DomainExists.Value ? "true" : "false") : string.Empty;
-            ctx.FlowVars[$"{outputVar}.MXExists"]        = validationResult.MXExists.HasValue
-                ? (validationResult.MXExists.Value ? "true" : "false") : string.Empty;
-            ctx.FlowVars[$"{outputVar}.isDisposable"]    = validationResult.IsDisposable.HasValue
-                ? (validationResult.IsDisposable.Value ? "true" : "false") : string.Empty;
-            ctx.FlowVars[$"{outputVar}.isDeliverable"]   = validationResult.IsDeliverable ? "true" : "false";
-        }
+            ctx.FlowVars[outputVar] = BuildEmailObject(
+                email,
+                validationResult.IsFormatValid,
+                validationResult.DomainExists,
+                validationResult.MXExists,
+                validationResult.IsDisposable,
+                validationResult.IsDeliverable).ToJsonString();
 
         // Determine error message for the first failing check
         var validationError = GetValidationError(validationResult, checkARecord, checkMX, checkDisposable);
@@ -132,4 +123,16 @@ public class EmailNodeHandler(IVariableResolver resolver, IEmailValidationServic
         AppendHistory(ctx, node, email, advanceNext);
         return new NodeResult(WithScript(MakeState()), advanceNext);
     }
+
+    private static JsonObject BuildEmailObject(
+        string value, bool isFormatValid, bool? domainExists,
+        bool? mxExists, bool? isDisposable, bool isDeliverable) => new()
+    {
+        ["value"]         = value,
+        ["isFormatValid"] = isFormatValid,
+        ["domainExists"]  = domainExists is bool d ? (JsonNode)JsonValue.Create(d) : null,
+        ["mxExists"]      = mxExists    is bool m ? (JsonNode)JsonValue.Create(m) : null,
+        ["isDisposable"]  = isDisposable is bool s ? (JsonNode)JsonValue.Create(s) : null,
+        ["isDeliverable"] = isDeliverable,
+    };
 }

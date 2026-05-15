@@ -75,6 +75,21 @@ html, body, #root {
     0 0 30px 18px rgba(6, 182, 212, 0.02);
 }
 
+.input-focus-glow-teal {
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.input-focus-glow-teal:focus {
+  border-color: #0d9488;
+  box-shadow:
+    0 0  0px  1px rgba(13, 148, 136, 0.55),
+    0 0  5px  3px rgba(13, 148, 136, 0.35),
+    0 0  9px  6px rgba(13, 148, 136, 0.20),
+    0 0 15px 10px rgba(13, 148, 136, 0.11),
+    0 0 22px 14px rgba(13, 148, 136, 0.05),
+    0 0 30px 18px rgba(13, 148, 136, 0.02);
+}
+
 /* ── React Flow — suppress built-in node type default borders ────────── */
 /* Our type key "input" collides with RF's built-in input node styling    */
 .react-flow__node-input {

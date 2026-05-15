@@ -289,10 +289,10 @@ export default function NodePropertiesPanel({
                 placeholder="customer_email"
                 onChange={(e) => onUpdate(node.id, { outputVariable: e.target.value })}
               />
-              <p className="text-[10px] text-gray-500">
+              <p className="text-[10px] text-gray-500 leading-snug">
                 {(data.outputVariable as string)
-                  ? <>Sub-properties: <span className="font-mono text-cyan-400">{'{{flow.' + (data.outputVariable as string) + '.isDeliverable}}'}</span></>
-                  : 'Saves email + validation results as flow variables'}
+                  ? <>Stores an object — access as <span className="font-mono text-cyan-400">{'{{flow.' + (data.outputVariable as string) + '.isDeliverable}}'}</span></>
+                  : 'Stores email + validation results as a flow object variable'}
               </p>
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
@@ -331,7 +331,62 @@ export default function NodePropertiesPanel({
               </label>
             </div>
             <p className="text-[10px] text-gray-500 leading-snug">
-              Format is always validated. Optional fields emit empty string when not checked.
+              Format is always validated. Unchecked validations store null in the output object.
+            </p>
+          </>
+        )
+
+      case 'phone':
+        return (
+          <>
+            {inlineScriptFields()}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-400">Output variable</label>
+              <input
+                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
+                value={(data.outputVariable as string) ?? ''}
+                placeholder="customer_phone"
+                onChange={(e) => onUpdate(node.id, { outputVariable: e.target.value })}
+              />
+              <p className="text-[10px] text-gray-500 leading-snug">
+                {(data.outputVariable as string)
+                  ? <>Stores an object — access as <span className="font-mono text-teal-400">{'{{flow.' + (data.outputVariable as string) + '.isTollFree}}'}</span></>
+                  : 'Stores phone number + properties as a flow object variable'}
+              </p>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={(data.required as boolean) ?? false}
+                onChange={(e) => onUpdate(node.id, { required: e.target.checked })}
+              />
+              Required
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={(data.allowInternational as boolean) ?? false}
+                onChange={(e) => onUpdate(node.id, { allowInternational: e.target.checked })}
+              />
+              Allow International
+            </label>
+            {(data.allowInternational as boolean) && (
+              <p className="text-[10px] text-gray-500 leading-snug -mt-1 ml-5">
+                Mask becomes <span className="font-mono">+099 (000) 000-0000</span>. Enter country code zero-padded to 3 digits (e.g. 001 for +1, 044 for +44).
+              </p>
+            )}
+            <label className="flex items-center gap-2 text-sm text-gray-500 cursor-not-allowed" title="Coming in a future release">
+              <input
+                type="checkbox"
+                disabled
+                checked={(data.dncCheck as boolean) ?? false}
+                onChange={(e) => onUpdate(node.id, { dncCheck: e.target.checked })}
+              />
+              DNC Registry Check
+              <span className="text-[10px] text-gray-600 ml-1">(coming soon)</span>
+            </label>
+            <p className="text-[10px] text-gray-600 leading-snug -mt-1">
+              Object properties: value · display_value · isMobile · isTollFree · isInternal · doNotCall
             </p>
           </>
         )
