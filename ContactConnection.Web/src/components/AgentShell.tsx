@@ -29,9 +29,9 @@ export default function AgentShell() {
       )}
 
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
-        <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="h-7" />
-        <div className="flex items-center gap-4">
+      <header className="flex items-stretch bg-gray-900 border-b border-gray-800 shrink-0">
+        <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="shrink-0 block" />
+        <div className="flex items-center justify-end flex-1 gap-4 px-4">
           <button
             onClick={() => navigate('/flows')}
             className="text-xs text-gray-400 hover:text-indigo-300 transition-colors"

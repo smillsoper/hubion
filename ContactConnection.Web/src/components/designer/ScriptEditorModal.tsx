@@ -1,15 +1,31 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import type { Node, Edge } from '@xyflow/react'
 import RichTextEditor, { type RichTextEditorHandle } from './RichTextEditor'
 import VariablePanel from './VariablePanel'
+import { computeAncestorVars } from '../../utils/flowGraph'
+import type { NodeData } from '../../types/designer'
 
 interface Props {
   value: string
   onChange: (html: string) => void
   onClose: () => void
+  /** Flow context — when provided the variable panel shows real available variables. */
+  nodeId?: string
+  nodes?: Node<NodeData>[]
+  edges?: Edge[]
+  entryNodeId?: string | null
 }
 
-export default function ScriptEditorModal({ value, onChange, onClose }: Props) {
+export default function ScriptEditorModal({
+  value, onChange, onClose,
+  nodeId, nodes, edges,
+}: Props) {
   const editorRef = useRef<RichTextEditorHandle>(null)
+
+  const flowVars = useMemo(() => {
+    if (!nodeId || !nodes || !edges) return undefined
+    return computeAncestorVars(nodeId, nodes, edges)
+  }, [nodeId, nodes, edges])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -41,8 +57,11 @@ export default function ScriptEditorModal({ value, onChange, onClose }: Props) {
           </div>
 
           {/* Variable panel */}
-          <div className="w-52 shrink-0 border-l border-gray-200 overflow-y-auto bg-gray-50">
-            <VariablePanel onInsert={(token) => editorRef.current?.insert(token)} />
+          <div className="w-56 shrink-0 border-l border-gray-200 overflow-y-auto">
+            <VariablePanel
+              onInsert={(token) => editorRef.current?.insert(token)}
+              flowVars={flowVars}
+            />
           </div>
         </div>
 

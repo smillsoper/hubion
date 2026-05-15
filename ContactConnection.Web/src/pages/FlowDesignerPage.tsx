@@ -398,6 +398,9 @@ function DesignerCanvas({
             onSetEntry={setEntryNode}
             onDelete={deleteNode}
             onClose={() => setSelectedNodeId(null)}
+            nodes={nodes as Node<NodeData>[]}
+            edges={edges}
+            entryNodeId={entryNodeId}
           />
         )}
       </div>

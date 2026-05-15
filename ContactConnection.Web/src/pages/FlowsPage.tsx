@@ -55,24 +55,26 @@ export default function FlowsPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 shrink-0">
-        <div className="flex items-center gap-3">
-          <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="h-8 shrink-0" />
-          <div className="w-px h-5 bg-gray-700" />
+      <div className="flex items-stretch bg-gray-900 border-b border-gray-800 shrink-0">
+        <img src="/cc-navbar-dark.svg" alt="Contact Connection" className="shrink-0 block" />
+        <div className="flex items-center justify-between flex-1 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-px h-5 bg-gray-700" />
+            <button
+              onClick={() => navigate('/agent')}
+              className="text-gray-400 hover:text-gray-200 text-sm flex items-center gap-1 transition-colors"
+            >
+              ← Back
+            </button>
+            <span className="text-sm font-semibold text-white">Flows</span>
+          </div>
           <button
-            onClick={() => navigate('/agent')}
-            className="text-gray-400 hover:text-gray-200 text-sm flex items-center gap-1 transition-colors"
+            onClick={() => navigate('/designer')}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
           >
-            ← Back
+            + New Flow
           </button>
-          <span className="text-sm font-semibold text-white">Flows</span>
         </div>
-        <button
-          onClick={() => navigate('/designer')}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors"
-        >
-          + New Flow
-        </button>
       </div>
 
       {/* Content */}

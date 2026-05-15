@@ -9,11 +9,14 @@ export interface FlowNodeState {
   nodeType: 'script' | 'input' | 'email' | 'branch' | 'set_variable' | 'api_call' | 'end'
   label: string
   content?: string
-  inputType?: 'text' | 'select' | 'checkbox' | 'date' | 'address' | 'phone' | 'email'
+  inputType?: 'text' | 'select' | 'checkbox'
   required?: boolean
   validationError?: string
   nodeScriptLabel?: string
   nodeScriptContent?: string
+  minChars?: number
+  maxChars?: number
+  inputMask?: string
   options?: FlowOption[]
   condition?: string
   isTerminal: boolean

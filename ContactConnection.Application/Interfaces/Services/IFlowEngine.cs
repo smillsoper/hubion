@@ -96,6 +96,18 @@ public class FlowNodeState
     /// The UI displays this above the current node so agent reads the script and fills the input together.
     /// </summary>
     public string? ScriptContext { get; set; }
+
+    /// <summary>For text input nodes: minimum character count (null = no minimum).</summary>
+    public int? MinChars { get; set; }
+
+    /// <summary>For text input nodes: maximum character count (null = no maximum).</summary>
+    public int? MaxChars { get; set; }
+
+    /// <summary>
+    /// For text input nodes: WinForms-style mask pattern (e.g. "(000) 000-0000").
+    /// Null = no mask. When set, MinChars/MaxChars are implied by the mask and should be ignored.
+    /// </summary>
+    public string? InputMask { get; set; }
 }
 
 public class FlowOption

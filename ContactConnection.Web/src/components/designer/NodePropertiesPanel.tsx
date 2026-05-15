@@ -1,6 +1,22 @@
-import type { Node } from '@xyflow/react'
+import { useMemo, useRef, useState } from 'react'
+import type { Node, Edge } from '@xyflow/react'
 import type { NodeData, ContactConnectionNodeType } from '../../types/designer'
 import ScriptContentEditor from './ScriptContentEditor'
+import VariablePanel from './VariablePanel'
+import { computeAncestorVars } from '../../utils/flowGraph'
+
+const PRESET_MASKS = [
+  { label: 'None', value: '' },
+  { label: 'Phone — (555) 555-5555', value: '(000) 000-0000' },
+  { label: 'Date — MM/DD/YYYY', value: '00/00/0000' },
+  { label: 'SSN — 000-00-0000', value: '000-00-0000' },
+  { label: 'ZIP Code — 5 digit', value: '00000' },
+  { label: 'ZIP+4 — 00000-0000', value: '00000-0000' },
+  { label: 'EIN — 00-0000000', value: '00-0000000' },
+  { label: 'Credit Card', value: '0000 0000 0000 0000' },
+  { label: 'Time — HH:MM', value: '00:00' },
+  { label: 'Custom…', value: '__custom__' },
+]
 
 interface Props {
   node: Node<NodeData>
@@ -9,18 +25,56 @@ interface Props {
   onSetEntry: (id: string) => void
   onDelete: (id: string) => void
   onClose: () => void
+  /** Flow graph context — enables flow-aware variable panels. */
+  nodes: Node<NodeData>[]
+  edges: Edge[]
+  entryNodeId: string | null
 }
 
 export default function NodePropertiesPanel({
-  node,
-  isEntry,
-  onUpdate,
-  onSetEntry,
-  onDelete,
-  onClose,
+  node, isEntry, onUpdate, onSetEntry, onDelete, onClose,
+  nodes, edges,
 }: Props) {
   const type = node.type as ContactConnectionNodeType
   const data = node.data
+
+  // Flow-aware variables at this node's position (memoised — recomputes when graph changes)
+  const flowVars = useMemo(
+    () => computeAncestorVars(node.id, nodes, edges),
+    [node.id, nodes, edges],
+  )
+
+  // Variable panel toggle for set_variable node
+  const [varPanelOpen, setVarPanelOpen] = useState(false)
+
+  // Track the last-focused assignment field so clicking a variable inserts there
+  const lastFocused = useRef<{ index: number; side: 'variable' | 'value'; el: HTMLInputElement } | null>(null)
+
+  function handleVarInsert(token: string) {
+    const f = lastFocused.current
+    if (!f) {
+      navigator.clipboard.writeText(token).catch(() => {})
+      return
+    }
+    const el = f.el
+    const start = el.selectionStart ?? el.value.length
+    const end   = el.selectionEnd   ?? el.value.length
+    const newVal = el.value.slice(0, start) + token + el.value.slice(end)
+    const assignments = (data.assignments as { variable: string; value: string }[]) ?? []
+    const next = [...assignments]
+    if (f.side === 'variable') next[f.index] = { ...next[f.index], variable: newVal }
+    else                       next[f.index] = { ...next[f.index], value: newVal }
+    onUpdate(node.id, { assignments: next })
+    // Restore focus + advance cursor after React re-renders
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + token.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
+
+  // Shared flow context for ScriptContentEditor
+  const scriptCtx = { nodeId: node.id, nodes, edges, entryNodeId: null as string | null }
 
   function field(
     key: keyof NodeData,
@@ -77,6 +131,7 @@ export default function NodePropertiesPanel({
             content={(data.scriptContent as string) ?? ''}
             onUpdate={(html) => onUpdate(node.id, { scriptContent: html })}
             dark
+            {...scriptCtx}
           />
         </div>
         <div className="border-t border-gray-800 -mx-4 my-1" />
@@ -93,28 +148,108 @@ export default function NodePropertiesPanel({
             content={(data.content as string) ?? ''}
             onUpdate={(html) => onUpdate(node.id, { content: html })}
             dark
+            {...scriptCtx}
           />
         )
 
-      case 'input':
+      case 'input': {
+        const fieldType = (data.fieldType as string) ?? 'text'
+        const inputMask = (data.inputMask as string) ?? ''
+        const hasMask = inputMask !== '' && inputMask !== undefined
         return (
           <>
             {inlineScriptFields()}
+
+            {/* Field type */}
             {field(
               'fieldType',
               'Field Type',
               <select
                 className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-sky-500"
-                value={(data.fieldType as string) ?? 'text'}
+                value={fieldType}
                 onChange={(e) => onUpdate(node.id, { fieldType: e.target.value })}
               >
-                {['text', 'select', 'checkbox', 'date', 'phone', 'email', 'address'].map((t) => (
+                {['text', 'select', 'checkbox'].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>,
             )}
-            {(data.fieldType as string) === 'select' &&
+
+            {/* Select options */}
+            {fieldType === 'select' &&
               field('options', 'Options (comma-separated)', textarea('options', 2, 'Option A, Option B, Option C'))}
+
+            {/* Text-specific: mask + min/max */}
+            {fieldType === 'text' && (
+              <>
+                {/* Input mask */}
+                {field(
+                  'inputMask',
+                  'Input Mask',
+                  <select
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-sky-500"
+                    value={inputMask}
+                    onChange={(e) => onUpdate(node.id, { inputMask: e.target.value, customMask: '' })}
+                  >
+                    {PRESET_MASKS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>,
+                )}
+
+                {/* Custom mask input */}
+                {inputMask === '__custom__' && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-400">Custom mask</label>
+                    <input
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white font-mono placeholder-gray-500 focus:outline-none focus:border-sky-500"
+                      value={(data.customMask as string) ?? ''}
+                      placeholder="(000) 000-0000"
+                      onChange={(e) => onUpdate(node.id, { customMask: e.target.value })}
+                    />
+                    <p className="text-[10px] text-gray-500 leading-snug">
+                      0=digit&nbsp; 9=digit/space&nbsp; L=letter&nbsp; ?=letter/space&nbsp; A=alphanum&nbsp; &amp;=any
+                    </p>
+                  </div>
+                )}
+
+                {/* Min / Max characters — disabled when mask is active */}
+                <div className="flex gap-2">
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className={`text-xs font-medium ${hasMask ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Min chars
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      disabled={hasMask}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 disabled:opacity-35 disabled:cursor-not-allowed"
+                      value={(data.minChars as number) ?? ''}
+                      placeholder="0"
+                      onChange={(e) => onUpdate(node.id, { minChars: e.target.value ? Number(e.target.value) : undefined })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className={`text-xs font-medium ${hasMask ? 'text-gray-600' : 'text-gray-400'}`}>
+                      Max chars
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      disabled={hasMask}
+                      className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 disabled:opacity-35 disabled:cursor-not-allowed"
+                      value={(data.maxChars as number) ?? ''}
+                      placeholder="∞"
+                      onChange={(e) => onUpdate(node.id, { maxChars: e.target.value ? Number(e.target.value) : undefined })}
+                    />
+                  </div>
+                </div>
+                {hasMask && (
+                  <p className="text-[10px] text-gray-600 -mt-1">Min / max are set automatically by the mask.</p>
+                )}
+              </>
+            )}
+
             <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input
                 type="checkbox"
@@ -123,6 +258,7 @@ export default function NodePropertiesPanel({
               />
               Required
             </label>
+
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-gray-400">Output variable</label>
               <input
@@ -139,6 +275,7 @@ export default function NodePropertiesPanel({
             </div>
           </>
         )
+      }
 
       case 'email':
         return (
@@ -215,13 +352,39 @@ export default function NodePropertiesPanel({
         const assignments = (data.assignments as { variable: string; value: string }[]) ?? [{ variable: '', value: '' }]
         return (
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-gray-400">Assignments</label>
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-gray-400">Assignments</label>
+              <button
+                type="button"
+                className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded transition-colors ${
+                  varPanelOpen
+                    ? 'bg-violet-900/60 text-violet-300'
+                    : 'text-violet-400 hover:text-violet-300 hover:bg-violet-900/30'
+                }`}
+                onClick={() => setVarPanelOpen((v) => !v)}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                </svg>
+                Variables
+                <svg
+                  className={`w-3 h-3 transition-transform duration-150 ${varPanelOpen ? 'rotate-180' : ''}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Assignment rows */}
             {assignments.map((a, i) => (
               <div key={i} className="flex gap-1 items-center">
                 <input
                   className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
                   placeholder="{{flow.var}}"
                   value={a.variable}
+                  onFocus={(e) => { lastFocused.current = { index: i, side: 'variable', el: e.target } }}
                   onChange={(e) => {
                     const next = [...assignments]
                     next[i] = { ...a, variable: e.target.value }
@@ -231,8 +394,9 @@ export default function NodePropertiesPanel({
                 <span className="text-gray-500 text-xs">=</span>
                 <input
                   className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
-                  placeholder="value"
+                  placeholder="value or {{token}}"
                   value={a.value}
+                  onFocus={(e) => { lastFocused.current = { index: i, side: 'value', el: e.target } }}
                   onChange={(e) => {
                     const next = [...assignments]
                     next[i] = { ...a, value: e.target.value }
@@ -245,10 +409,28 @@ export default function NodePropertiesPanel({
                 >×</button>
               </div>
             ))}
+
             <button
               className="text-xs text-sky-400 hover:text-sky-300 self-start"
               onClick={() => onUpdate(node.id, { assignments: [...assignments, { variable: '', value: '' }] })}
             >+ Add assignment</button>
+
+            {/* Slide-out variable panel */}
+            {varPanelOpen && (
+              <div className="mt-1 border border-gray-700 rounded-lg overflow-hidden" style={{ maxHeight: 320 }}>
+                <VariablePanel
+                  onInsert={handleVarInsert}
+                  flowVars={flowVars}
+                  dark
+                />
+              </div>
+            )}
+
+            {varPanelOpen && (
+              <p className="text-[10px] text-gray-600 -mt-1">
+                Click a variable to insert at the focused field, or copy to clipboard.
+              </p>
+            )}
           </div>
         )
       }

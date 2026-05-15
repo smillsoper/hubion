@@ -26,7 +26,7 @@ public partial class VariableResolver : IVariableResolver
         return TagPattern().Replace(template, match =>
         {
             var tag = match.Groups[1].Value.Trim();
-            return ResolveTag(tag, context) ?? match.Value; // leave unknown tags as-is
+            return ResolveTag(tag, context) ?? "[not captured]";
         });
     }
 

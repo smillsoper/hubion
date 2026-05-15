@@ -20,6 +20,10 @@ export interface NodeData extends Record<string, unknown> {
   required?: boolean
   options?: string
   outputVariable?: string
+  minChars?: number
+  maxChars?: number
+  inputMask?: string
+  customMask?: string
   // email
   checkARecord?: boolean
   checkMX?: boolean
@@ -50,6 +54,10 @@ export interface ContactConnectionNodeDef {
   required?: boolean
   options?: FlowOption[]
   outputVariable?: string
+  minChars?: number
+  maxChars?: number
+  inputMask?: string
+  customMask?: string
   checkARecord?: boolean
   checkMX?: boolean
   checkDisposable?: boolean
@@ -126,7 +134,7 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
     case 'script':
       return { label: 'New Script', content: '' }
     case 'input':
-      return { label: 'New Input', scriptLabel: '', scriptContent: '', fieldType: 'text', required: false, options: '', outputVariable: '' }
+      return { label: 'New Input', scriptLabel: '', scriptContent: '', fieldType: 'text', required: false, options: '', outputVariable: '', minChars: undefined, maxChars: undefined, inputMask: '', customMask: '' }
     case 'email':
       return { label: 'Email', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
     case 'branch':

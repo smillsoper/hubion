@@ -4,17 +4,20 @@ using ContactConnection.Application.Interfaces.Services;
 namespace ContactConnection.Infrastructure.FlowEngine.NodeHandlers;
 
 /// <summary>
-/// Handles "input" nodes — agent captures a value (text, select, checkbox, date, address, phone).
+/// Handles "input" nodes — agent captures a value (text, select, checkbox).
 /// The captured value is stored in ctx.Inputs keyed by node_id for later {{input.node_id}} resolution.
 ///
 /// Node schema:
 /// {
 ///   "type": "input",
 ///   "label": "First Name",
-///   "input_type": "text" | "select" | "checkbox" | "date" | "address" | "phone",
+///   "input_type": "text" | "select" | "checkbox",
 ///   "prompt": "Ask the caller for their first name.",
 ///   "options": [{ "value": "yes", "label": "Yes" }, ...],   // for select/radio
 ///   "required": true,
+///   "minChars": 2,           // text only — minimum characters (omit for none)
+///   "maxChars": 50,          // text only — maximum characters (omit for none)
+///   "inputMask": "(000) 000-0000", // text only — WinForms mask; overrides min/max
 ///   "transitions": { "default": "node_002" }
 /// }
 /// </summary>
@@ -62,7 +65,27 @@ public class InputNodeHandler(IVariableResolver resolver) : NodeHandlerBase(reso
         var displayState = BuildState(ctx, node, resolvedContent: prompt,
             inputType: inputType, options: ParseOptions(node));
         AttachInlineScript(node, ctx, displayState);
+        AttachTextConstraints(node, inputType, displayState);
         return Task.FromResult(new NodeResult(displayState, NextNodeId: null));
+    }
+
+    private static void AttachTextConstraints(JsonObject node, string inputType, FlowNodeState state)
+    {
+        if (inputType != "text") return;
+
+        if (node["minChars"] is System.Text.Json.Nodes.JsonValue minV && minV.TryGetValue<int>(out var minInt))
+            state.MinChars = minInt;
+        if (node["maxChars"] is System.Text.Json.Nodes.JsonValue maxV && maxV.TryGetValue<int>(out var maxInt))
+            state.MaxChars = maxInt;
+
+        // Resolve mask: "__custom__" → use customMask field; otherwise use inputMask directly
+        var inputMask = Str(node, "inputMask");
+        if (!string.IsNullOrEmpty(inputMask))
+        {
+            state.InputMask = inputMask == "__custom__"
+                ? Str(node, "customMask")
+                : inputMask;
+        }
     }
 
     private void AttachInlineScript(JsonObject node, FlowExecutionContext ctx, FlowNodeState state)
