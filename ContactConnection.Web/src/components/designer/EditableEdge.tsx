@@ -121,6 +121,11 @@ export default function EditableEdge({
         connection layer, so React Flow's crosshair / connection handler
         never intercepts pointer events on them.
         "nodrag nopan" classes tell React Flow to ignore these elements.
+
+        Handles are ONLY rendered when the edge is selected — this matches
+        standard design-tool UX (handles appear on selection) and avoids a
+        React Flow layering issue where handles rendered during the initial
+        load are invisible until setEdges is called again.
       */}
       <EdgeLabelRenderer>
         {/* Edge label */}
@@ -152,8 +157,8 @@ export default function EditableEdge({
           </div>
         )}
 
-        {/* Waypoint handles */}
-        {waypoints.map((wp, i) => (
+        {/* Waypoint handles — only visible when edge is selected */}
+        {selected && waypoints.map((wp, i) => (
           <div
             key={i}
             className="nodrag nopan"
@@ -163,12 +168,13 @@ export default function EditableEdge({
               width: 14,
               height: 14,
               borderRadius: '50%',
-              background: selected ? '#6366f1' : '#6b7280',
+              background: '#6366f1',
               border: '2px solid #fff',
               boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
               cursor: 'grab',
               pointerEvents: 'all',
               touchAction: 'none',
+              zIndex: 10,
             }}
             onPointerDown={e => {
               e.stopPropagation()
@@ -195,6 +201,40 @@ export default function EditableEdge({
             }}
           />
         ))}
+
+        {/* Midpoint hint — shown when selected with no waypoints yet.
+            Prompts the user to double-click to add a curve point. */}
+        {selected && waypoints.length === 0 && (
+          <div
+            className="nodrag nopan"
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'none',
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <div style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: 'rgba(99,102,241,0.5)',
+              border: '1.5px solid rgba(99,102,241,0.8)',
+            }} />
+            <span style={{
+              fontSize: 10,
+              color: 'rgba(99,102,241,0.9)',
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
+            }}>
+              double-click to add curve point
+            </span>
+          </div>
+        )}
       </EdgeLabelRenderer>
 
       {menu &&
