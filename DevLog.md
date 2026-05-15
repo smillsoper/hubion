@@ -35,6 +35,8 @@
 | 23 | 2026-05-10 | 1:11 PM CDT | 1:55 PM CDT | 44 min | ~994 min |
 | 24 | 2026-05-11 | 4:55 AM PDT | 5:06 AM PDT | 11 min | ~1005 min |
 | 25 | 2026-05-11 | 5:06 AM PDT | 5:24 AM PDT | 18 min | ~1023 min |
+| 26 | 2026-05-14 | 4:29 PM CDT | 6:03 PM CDT | 94 min | ~1117 min |
+| 27 | 2026-05-14 | 6:07 PM CDT | 7:03 PM CDT | 56 min | ~1173 min |
 
 ---
 
@@ -1447,3 +1449,36 @@ Continuation of Session 20 work — session was still in progress when the user 
 - `FlowsPage.tsx` — same `items-stretch` refactor; logo no longer capped at `h-8`; inner content div handles padding and `justify-between` layout.
 
 **Build:** 0 warnings, 0 errors (dotnet + Vite + `tsc --noEmit`) ✓
+
+---
+
+## Session 27 — Phone Node + Object Variables + EditableEdge Fix
+
+**Date:** 2026-05-14
+**Start:** 6:07 PM CDT
+**End:** 7:03 PM CDT
+**Duration:** 56 minutes
+**Cumulative Total:** ~1173 min
+
+### Accomplished
+
+**Phone node — full implementation**
+- `PhoneNodeHandler.cs` (new) — handles `phone` node type; domestic mask `(000) 000-0000`, international `+099 (000) 000-0000` (3-digit zero-padded country code: 001=+1, 044=+44, 357=+357); validates against full ITU-T E.164 country code set; isTollFree derived from area code set {800,833,844,855,866,877,888}; isMobile=null (carrier lookup pending), doNotCall=false (DNC registry placeholder); stores output as JSON object in `ctx.FlowVars[outputVar]`.
+- `ServiceCollectionExtensions.cs` — registered `PhoneNodeHandler` as scoped `INodeHandler`.
+- `PhoneNode.tsx` (new) — teal canvas node; shows phone type badge, required/intl indicators, output variable tag, DNC badge.
+- `NodePalette.tsx` — bug fix: added `'phone'` to `NODE_TYPES` array (was missing; `NODE_META` had it but array did not, so it never appeared in the palette).
+- `FlowDesignerPage.tsx` — added `phone: PhoneNode` to `nodeTypes` map and `phone: '#0d9488'` to MiniMap color table.
+- `NodePropertiesPanel.tsx` — `case 'phone'`: Output Variable, Required checkbox, Allow International checkbox (with mask hint), DNC Registry Check (disabled, "coming soon"), sub-property list note.
+- `NodeDisplay.tsx` — phone node form: teal-glowing masked input, `node.validationError` display, teal "Validating…"/"Next" button; reuses existing mask engine.
+- `index.css` — `.input-focus-glow-teal` CSS class added (6-layer feathered teal glow).
+- `designer.ts` — added `'phone'` to `ContactConnectionNodeType`, `allowInternational?` and `dncCheck?` to `NodeData` + `ContactConnectionNodeDef`, `NODE_META` entry, `defaultNodeData` case.
+- `flow.ts` — added `'phone'` to `nodeType` union.
+
+**Object variable storage for email + phone nodes**
+- `EmailNodeHandler.cs` — replaced 6 flat `ctx.FlowVars[$"{outputVar}.xxx"]` assignments with a single `BuildEmailObject` helper that serializes the full email result as a JSON string into `ctx.FlowVars[outputVar]`.
+- `VariableResolver.cs` — added `ResolveFlowVar` static method: direct lookup first, then dot-notation JSON extraction via `JsonNode.Parse`; `{{flow.phone.isTollFree}}` resolves by finding "phone" key, parsing its JSON value, and extracting `["isTollFree"]`. Fully backward-compatible with flat string vars.
+- `flowGraph.ts` — `FlowVarToken` interface extended with `isObject?` + `properties?`; email and phone cases use `addObject()` to declare structured output in the variable panel.
+- `VariablePanel.tsx` — flow namespace section now renders object vars as a non-clickable group header with `[obj]` badge, and clickable indented sub-properties (e.g. `.isTollFree` → inserts `{{flow.phone.isTollFree}}`).
+
+**EditableEdge waypoint visibility fix**
+- `EditableEdge.tsx` — waypoint handles now only render when `selected === true`, fixing the bug where handles were invisible after initial load until `setEdges` was called. Added `zIndex: 10` to handles. Added midpoint hint (semi-transparent indigo dot + "double-click to add curve point" text) when edge is selected but has no waypoints yet.
