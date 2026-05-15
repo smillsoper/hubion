@@ -1395,3 +1395,55 @@ Continuation of Session 20 work — session was still in progress when the user 
 - `FlowEngine.cs` was missing `using ContactConnection.Domain.Entities` after a prior edit removed it; caused `FlowSession` type not found at build time.
 
 **Build:** 0 warnings, 0 errors ✓
+
+---
+
+## Session 26 — Input Mask Engine, Flow-Aware Variable Panels, Navbar Logo Fixes
+
+**Date:** 2026-05-14
+**Start:** 4:29 PM CDT
+**End:** 6:03 PM CDT
+**Duration:** 94 minutes
+**Cumulative Total:** ~1117 min
+
+### Accomplished
+
+**SVG logo centering (all 4 assets)**
+- `cc-logo-dark.svg` — viewBox trimmed from `0 0 580 100` → `0 0 460 100`; opaque background rect removed (transparent, inherits parent background); right-side excess whitespace eliminated so logo appears visually centered.
+- `cc-logo-light.svg` — viewBox trimmed from `0 0 580 100` → `0 0 460 100`.
+- `cc-navbar-dark.svg` — viewBox trimmed from `0 0 380 56` → `0 0 230 56`; width updated to 230.
+- `cc-navbar-light.svg` — viewBox trimmed from `0 0 380 56` → `0 0 230 56`; width updated to 230.
+
+**Auto-focus + CRMPro-style glow effect**
+- `NodeDisplay.tsx` — `focusRef = useRef<HTMLElement | null>(null)` + `useEffect([node])` auto-focuses the primary input field whenever the displayed node changes; `setLocalError(null)` also fires on node change to clear stale validation.
+- `index.css` — `.input-focus-glow` (indigo) and `.input-focus-glow-cyan` (cyan) CSS classes: 6-layer `box-shadow` with linearly decreasing alpha values, emulating the feathered outer glow from CRMPro's `OnPaintBackground` (`ControlClasses.vb` lines 111–378). Applied to all input and email fields in `NodeDisplay.tsx`.
+
+**Input node — field type pruning + text constraints**
+- Removed `email`, `address`, `phone`, and `date` input types from the input node (specialized nodes will be built for these separately).
+- Added `minChars`, `maxChars`, and `inputMask` properties to `NodeData`, `ContactConnectionNodeDef`, `defaultNodeData`, and `FlowNodeState`.
+- `NodePropertiesPanel.tsx` — input case now shows: mask dropdown (None + 6 presets: Phone, Date, SSN, ZIP+4, Credit Card, Time + Custom option), custom mask text field (shown when Custom selected), min/max character fields (disabled when a mask is active).
+- `InputNodeHandler.cs` — `AttachTextConstraints()` static method reads `minChars`, `maxChars`, and `inputMask` / `customMask` from node JSON and populates `FlowNodeState`.
+
+**WinForms-style input mask engine (frontend)**
+- `NodeDisplay.tsx` — `MASK_CHARS`, `MASK_REQUIRED`, `maskCharValid()`, `applyMask()`, `isMaskComplete()` implement the WinForms `MaskedTextBox` character set: `0`=digit, `9`=digit/space, `L`=letter, `?`=letter/space, `A`=alphanum, `a`=alphanum/space, `&`=any required, `C`=any optional; all other characters are literals auto-inserted.
+- `handleTextChange` pipes raw input through `applyMask` when a mask is set.
+- `handleSubmit` validates: if mask set → partial entry blocked regardless of required; empty + required → error; empty + not required → allow advance. If no mask → validates min/max character bounds. Sends `inputValue` (even empty string) so backend can distinguish "submitted blank" from "first display".
+- Character count hint renders below the text input when min/max are set and no mask is active.
+- `localError` state displays inline red validation messages.
+
+**Flow-aware variable panels**
+- `src/utils/flowGraph.ts` (new file) — `computeAncestorVars(nodeId, nodes, edges)`: reverse-BFS from the target node through the edge graph; extracts `input` nodes → `inputs[]`, `email` nodes → `flowVars[]` (outputVar + sub-properties), `set_variable` nodes → `flowVars[]` from assignments, `api_call` nodes → `apis[]`. Returns `FlowAncestorVars` shape.
+- `VariablePanel.tsx` — rewritten to accept `flowVars?: FlowAncestorVars` and `dark?: boolean`; when `flowVars` provided, replaces static placeholder sections with real computed tokens; shows "None before this node" when a namespace is empty; full dark theme token set.
+- `ScriptEditorModal.tsx` — accepts `nodeId?`, `nodes?`, `edges?`, `entryNodeId?`; computes `flowVars` via `useMemo`; passes to `VariablePanel`.
+- `ScriptContentEditor.tsx` — passes `nodeId`, `nodes`, `edges`, `entryNodeId` through to `ScriptEditorModal`.
+- `NodePropertiesPanel.tsx` — all `ScriptContentEditor` calls now include flow context props; set_variable case adds a collapsible Variables slide-out panel with `dark` theme + flow-aware tokens; `lastFocused` ref tracks which assignment input was active; `handleVarInsert` splices the clicked token at the cursor position using `selectionStart`/`selectionEnd` + `requestAnimationFrame` to restore focus.
+- `FlowDesignerPage.tsx` — `NodePropertiesPanel` now receives `nodes`, `edges`, `entryNodeId`.
+
+**Variable resolution fallback**
+- `VariableResolver.cs` — unresolved `{{tag}}` expressions now emit `[not captured]` instead of the raw `{{tag}}` notation. Easier for agents to recognize a missing value at a glance.
+
+**Navbar logo height fix — AgentShell + FlowsPage**
+- `AgentShell.tsx` — header changed from `items-center py-2` + `h-7` on the logo to `items-stretch` pattern (logo is a direct flex child, no height constraint, fills full bar height naturally); buttons sit in a padded inner `flex-1` div, matching the `FlowDesignerPage` approach.
+- `FlowsPage.tsx` — same `items-stretch` refactor; logo no longer capped at `h-8`; inner content div handles padding and `justify-between` layout.
+
+**Build:** 0 warnings, 0 errors (dotnet + Vite + `tsc --noEmit`) ✓
