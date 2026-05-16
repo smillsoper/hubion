@@ -162,6 +162,9 @@ function DesignerCanvas({
   const [publishing, setPublishing] = useState(false)
   const [statusMsg, setStatusMsg] = useState('')
 
+  // Option-picker modal for select-type input nodes
+  const [pendingConn, setPendingConn] = useState<Connection | null>(null)
+
   // Load existing flow
   useEffect(() => {
     if (!initialFlowId) return
@@ -179,19 +182,46 @@ function DesignerCanvas({
     })
   }, [initialFlowId, setNodes, setEdges])
 
-  // Connection — use explicit id format that matches fromContactConnectionDef
+  // When an option is picked in the modal, complete the pending edge
+  const onOptionPicked = useCallback((optionValue: string) => {
+    if (!pendingConn) return
+    const conn = pendingConn
+    setPendingConn(null)
+    setEdges((eds) =>
+      addEdge({
+        ...conn,
+        id: `${conn.source}-${optionValue}-${conn.target}`,
+        sourceHandle: optionValue,
+        type: 'editable',
+        label: optionValue,
+        data: { waypoints: [] },
+      } as Edge, eds),
+    )
+  }, [pendingConn, setEdges])
+
+  // Connection — intercept select-type input nodes to show option picker
   const onConnect = useCallback(
-    (params: Connection) =>
+    (params: Connection) => {
+      const sourceNode = (nodes as Node<NodeData>[]).find((n) => n.id === params.source)
+      if (
+        sourceNode?.type === 'input' &&
+        (sourceNode.data.fieldType as string) === 'select' &&
+        (sourceNode.data.options as string | undefined)?.trim()
+      ) {
+        setPendingConn(params)
+        return
+      }
       setEdges((eds) =>
         addEdge({
           ...params,
           id: `${params.source}-${params.sourceHandle ?? 'default'}-${params.target}`,
           type: 'editable',
-          label: params.sourceHandle ?? undefined,
+          label: params.sourceHandle && params.sourceHandle !== 'default' ? params.sourceHandle : undefined,
           data: { waypoints: [] },
         } as Edge, eds),
-      ),
-    [setEdges],
+      )
+    },
+    [nodes, setEdges],
   )
 
   // Node click → open properties
@@ -410,6 +440,53 @@ function DesignerCanvas({
           />
         )}
       </div>
+
+      {/* Option picker modal — shown when connecting from a select-type input node */}
+      {pendingConn && (() => {
+        const srcNode = (nodes as Node<NodeData>[]).find((n) => n.id === pendingConn.source)
+        const rawOpts = (srcNode?.data.options as string | undefined) ?? ''
+        const options = rawOpts.split(',').map((o) => o.trim()).filter(Boolean)
+        const wired   = new Set(edges.filter((e) => e.source === pendingConn.source).map((e) => e.sourceHandle))
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-80 p-5 flex flex-col gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">Which option leads here?</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Select the option that transitions to the connected node.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {options.map((opt) => {
+                  const alreadyWired = wired.has(opt)
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      disabled={alreadyWired}
+                      onClick={() => onOptionPicked(opt)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                        alreadyWired
+                          ? 'text-gray-600 bg-gray-800/40 cursor-not-allowed'
+                          : 'text-white bg-gray-800 hover:bg-emerald-900/50 hover:border-emerald-600 border border-gray-700'
+                      }`}
+                    >
+                      {alreadyWired ? `${opt} (already wired)` : opt}
+                    </button>
+                  )
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingConn(null)}
+                className="text-xs text-gray-500 hover:text-gray-300 self-center transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
