@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import type { FlowNodeState } from '../types/flow'
+import { COUNTRIES } from '../data/countries'
 
 // ── Address form constants ────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ const EMPTY_ADDR: AddrForm = {
   address1Prefix: '', address1: '',
   address2Prefix: '', address2: '',
   zip: '', zip4: '', city: '', state: '',
-  country: '',
+  country: 'US',
 }
 
 // ── WinForms-style input mask engine ──────────────────────────────────────
@@ -524,18 +525,33 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
             </select>
           </div>
 
-          {/* Country — international only */}
-          {node.allowInternational && (
-            <input
-              type="text"
-              value={addrForm.country}
-              onChange={(e) => setAddrForm((f) => ({ ...f, country: e.target.value }))}
-              onFocus={() => setFocusedField('country')}
-              onBlur={() => setFocusedField(null)}
-              placeholder="Country (leave blank for US)"
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
-            />
-          )}
+          {/* Country — US/CA only when domestic; full list when international */}
+          <select
+            value={addrForm.country}
+            onChange={(e) => setAddrForm((f) => ({ ...f, country: e.target.value }))}
+            onFocus={() => setFocusedField('country')}
+            onBlur={() => setFocusedField(null)}
+            className="w-full bg-gray-800 text-white rounded-lg px-2 py-2 text-sm input-focus-glow-orange border border-gray-700"
+          >
+            {node.allowInternational ? (
+              <>
+                <optgroup label="Common">
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                </optgroup>
+                <optgroup label="All Countries">
+                  {COUNTRIES.slice(2).map(([code, name]) => (
+                    <option key={code} value={code}>{name}</option>
+                  ))}
+                </optgroup>
+              </>
+            ) : (
+              <>
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+              </>
+            )}
+          </select>
 
           <button
             type="submit"
