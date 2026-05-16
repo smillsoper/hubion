@@ -69,7 +69,9 @@ function toContactConnectionDef(
     const outgoing = edges.filter((e) => e.source === n.id)
     const transitions: Record<string, string> = {}
     for (const e of outgoing) {
-      transitions[e.sourceHandle ?? 'default'] = e.target
+      // Select-input edges store the option name in data.transition; fall back to sourceHandle
+      const key = (e.data?.transition as string | undefined) ?? e.sourceHandle ?? 'default'
+      transitions[key] = e.target
     }
     const { isEntry: _entry, options: optionsStr, ...rest } = n.data
 
@@ -122,16 +124,22 @@ function fromContactConnectionDef(def: ContactConnectionFlowDefinition): {
     })
     x += 260
 
+    const isSelectInput = type === 'input' && nodeDef.fieldType === 'select'
     for (const [handle, targetId] of Object.entries(transitions)) {
       const edgeId = `${id}-${handle}-${targetId}`
+      // Select-input option edges: visual handle = null (→ default), semantic key stored in data.transition
+      const isOptionEdge = isSelectInput && handle !== 'default'
       edges.push({
         id: edgeId,
         source: id,
         target: targetId,
-        sourceHandle: handle === 'default' ? null : handle,
+        sourceHandle: isOptionEdge ? null : (handle === 'default' ? null : handle),
         type: 'editable',
         label: handle !== 'default' ? handle : undefined,
-        data: { waypoints: def._waypoints?.[edgeId] ?? [] },
+        data: {
+          waypoints: def._waypoints?.[edgeId] ?? [],
+          ...(isOptionEdge ? { transition: handle } : {}),
+        },
       })
     }
   }
@@ -189,16 +197,19 @@ function DesignerCanvas({
     const conn = pendingConn
     setPendingConn(null)
     setEdges((eds) => {
-      const withoutOld = eds.filter(
-        (e) => !(e.source === conn.source && e.sourceHandle === optionValue),
-      )
+      // Remove existing edge for this option (both old sourceHandle format and new data.transition format)
+      const withoutOld = eds.filter((e) => {
+        if (e.source !== conn.source) return true
+        const key = (e.data?.transition as string | undefined) ?? e.sourceHandle
+        return key !== optionValue
+      })
       return addEdge({
         ...conn,
         id: `${conn.source}-${optionValue}-${conn.target}`,
-        sourceHandle: optionValue,
+        sourceHandle: null,          // visual: renders from the single default handle
         type: 'editable',
         label: optionValue,
-        data: { waypoints: [] },
+        data: { waypoints: [], transition: optionValue },  // semantic: carries the option name
       } as Edge, withoutOld)
     })
   }, [pendingConn, setEdges])
@@ -452,8 +463,12 @@ function DesignerCanvas({
         const options = rawOpts.split(',').map((o) => o.trim()).filter(Boolean)
         const wiredMap = new Map(
           edges
-            .filter((e) => e.source === pendingConn.source && e.sourceHandle)
-            .map((e) => [e.sourceHandle as string, e.target]),
+            .filter((e) => e.source === pendingConn.source)
+            .map((e) => {
+              const key = (e.data?.transition as string | undefined) ?? e.sourceHandle
+              return key ? ([key, e.target] as [string, string]) : null
+            })
+            .filter((x): x is [string, string] => x !== null),
         )
         return (
           <div

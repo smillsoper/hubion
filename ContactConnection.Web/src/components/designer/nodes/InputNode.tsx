@@ -18,9 +18,12 @@ export default function InputNode({ data, selected }: NodeProps & { data: NodeDa
     ? rawOptions.split(',').map((o) => o.trim()).filter(Boolean)
     : []
 
-  // Which options already have an outgoing edge from this node?
+  // Which options already have an outgoing edge? Check data.transition (new) or sourceHandle (legacy).
   const wiredOptions = new Set(
-    edges.filter((e) => e.source === nodeId).map((e) => e.sourceHandle),
+    edges
+      .filter((e) => e.source === nodeId)
+      .map((e) => (e.data as Record<string, unknown>)?.transition as string | undefined ?? e.sourceHandle)
+      .filter(Boolean),
   )
   const missingOptions = options.filter((o) => !wiredOptions.has(o))
   const hasWarning = options.length > 0 && missingOptions.length > 0
