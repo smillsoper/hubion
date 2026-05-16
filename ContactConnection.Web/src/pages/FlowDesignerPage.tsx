@@ -173,6 +173,67 @@ function DesignerCanvas({
   // Option-picker modal for select-type input nodes
   const [pendingConn, setPendingConn] = useState<Connection | null>(null)
 
+  // Use refs so the keydown handler always sees current state without re-registering
+  const nodesRef = useRef(nodes)
+  const edgesRef = useRef(edges)
+  const clipboardRef = useRef<{ nodes: Node<NodeData>[]; edges: Edge[] } | null>(null)
+  useEffect(() => { nodesRef.current = nodes }, [nodes])
+  useEffect(() => { edgesRef.current = edges }, [edges])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Skip when typing in any input/textarea/contenteditable
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return
+
+      const meta = e.metaKey || e.ctrlKey
+      if (!meta) return
+
+      if (e.key === 'c') {
+        const selected = nodesRef.current.filter((n) => n.selected)
+        if (selected.length === 0) return
+        e.preventDefault()
+        const selectedIds = new Set(selected.map((n) => n.id))
+        clipboardRef.current = {
+          nodes: selected,
+          edges: edgesRef.current.filter(
+            (ed) => selectedIds.has(ed.source) && selectedIds.has(ed.target),
+          ),
+        }
+      }
+
+      if (e.key === 'v') {
+        const cb = clipboardRef.current
+        if (!cb) return
+        e.preventDefault()
+        const ts = Date.now()
+        const idMap = new Map<string, string>()
+        cb.nodes.forEach((n, i) => idMap.set(n.id, `node_${ts}_${i}`))
+
+        const newNodes: Node<NodeData>[] = cb.nodes.map((n) => ({
+          ...n,
+          id: idMap.get(n.id)!,
+          position: { x: n.position.x + 40, y: n.position.y + 40 },
+          selected: true,
+          data: { ...n.data, isEntry: false },
+        }))
+
+        const newEdges: Edge[] = cb.edges.map((ed) => {
+          const newSrc = idMap.get(ed.source)!
+          const newTgt = idMap.get(ed.target)!
+          const key = (ed.data?.transition as string | undefined) ?? ed.sourceHandle ?? 'default'
+          return { ...ed, id: `${newSrc}-${key}-${newTgt}`, source: newSrc, target: newTgt }
+        })
+
+        setNodes((nds) => [...nds.map((n) => ({ ...n, selected: false })), ...newNodes])
+        setEdges((eds) => [...eds, ...newEdges])
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [setNodes, setEdges])  // stable setters — refs handle current values
+
   // Load existing flow
   useEffect(() => {
     if (!initialFlowId) return
@@ -419,6 +480,7 @@ function DesignerCanvas({
             onDrop={onDrop}
             fitView
             deleteKeyCode="Delete"
+            multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
             colorMode="dark"
           >
             <Background />
