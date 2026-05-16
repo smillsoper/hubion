@@ -182,21 +182,25 @@ function DesignerCanvas({
     })
   }, [initialFlowId, setNodes, setEdges])
 
-  // When an option is picked in the modal, complete the pending edge
+  // When an option is picked in the modal, complete the pending edge.
+  // Removes any existing edge for this option first (re-wire case).
   const onOptionPicked = useCallback((optionValue: string) => {
     if (!pendingConn) return
     const conn = pendingConn
     setPendingConn(null)
-    setEdges((eds) =>
-      addEdge({
+    setEdges((eds) => {
+      const withoutOld = eds.filter(
+        (e) => !(e.source === conn.source && e.sourceHandle === optionValue),
+      )
+      return addEdge({
         ...conn,
         id: `${conn.source}-${optionValue}-${conn.target}`,
         sourceHandle: optionValue,
         type: 'editable',
         label: optionValue,
         data: { waypoints: [] },
-      } as Edge, eds),
-    )
+      } as Edge, withoutOld)
+    })
   }, [pendingConn, setEdges])
 
   // Connection — intercept select-type input nodes to show option picker
@@ -446,32 +450,41 @@ function DesignerCanvas({
         const srcNode = (nodes as Node<NodeData>[]).find((n) => n.id === pendingConn.source)
         const rawOpts = (srcNode?.data.options as string | undefined) ?? ''
         const options = rawOpts.split(',').map((o) => o.trim()).filter(Boolean)
-        const wired   = new Set(edges.filter((e) => e.source === pendingConn.source).map((e) => e.sourceHandle))
+        const wiredMap = new Map(
+          edges
+            .filter((e) => e.source === pendingConn.source && e.sourceHandle)
+            .map((e) => [e.sourceHandle as string, e.target]),
+        )
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-default"
+            style={{ pointerEvents: 'all' }}
+          >
             <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-80 p-5 flex flex-col gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">Which option leads here?</p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Select the option that transitions to the connected node.
+                  Picking an already-wired option replaces its existing connection.
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 {options.map((opt) => {
-                  const alreadyWired = wired.has(opt)
+                  const isWired = wiredMap.has(opt)
                   return (
                     <button
                       key={opt}
                       type="button"
-                      disabled={alreadyWired}
                       onClick={() => onOptionPicked(opt)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        alreadyWired
-                          ? 'text-gray-600 bg-gray-800/40 cursor-not-allowed'
-                          : 'text-white bg-gray-800 hover:bg-emerald-900/50 hover:border-emerald-600 border border-gray-700'
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm border transition-colors cursor-pointer
+                        ${isWired
+                          ? 'text-amber-300 bg-amber-950/30 border-amber-800/50 hover:bg-amber-900/40'
+                          : 'text-white bg-gray-800 border-gray-700 hover:bg-emerald-900/50 hover:border-emerald-600'
+                        }`}
                     >
-                      {alreadyWired ? `${opt} (already wired)` : opt}
+                      <span>{opt}</span>
+                      {isWired && (
+                        <span className="ml-2 text-[10px] text-amber-500 font-medium">↺ re-wire</span>
+                      )}
                     </button>
                   )
                 })}
@@ -479,7 +492,7 @@ function DesignerCanvas({
               <button
                 type="button"
                 onClick={() => setPendingConn(null)}
-                className="text-xs text-gray-500 hover:text-gray-300 self-center transition-colors"
+                className="text-xs text-gray-500 hover:text-gray-300 self-center transition-colors cursor-pointer"
               >
                 Cancel
               </button>
