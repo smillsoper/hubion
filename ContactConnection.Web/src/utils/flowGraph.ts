@@ -105,6 +105,37 @@ export function computeAncestorVars(
         }
         break
       }
+      case 'address': {
+        const outVar = (data.outputVariable as string | undefined)?.trim()
+        if (outVar) {
+          addObject(outVar, `Address: ${nodeLabel}`, [
+            { key: 'firstName',         label: 'First name' },
+            { key: 'middleInitial',     label: 'Middle initial' },
+            { key: 'lastName',          label: 'Last name' },
+            { key: 'company',           label: 'Company' },
+            { key: 'address1Prefix',    label: 'Address 1 prefix' },
+            { key: 'address1',          label: 'Address line 1' },
+            { key: 'address2Prefix',    label: 'Address 2 prefix' },
+            { key: 'address2',          label: 'Address line 2' },
+            { key: 'formattedAddress1', label: 'Formatted address 1' },
+            { key: 'formattedAddress2', label: 'Formatted address 2' },
+            { key: 'fullAddress',       label: 'Full address (single line)' },
+            { key: 'city',              label: 'City' },
+            { key: 'state',             label: 'State' },
+            { key: 'zip',               label: 'ZIP code' },
+            { key: 'zip4',              label: 'ZIP+4' },
+            { key: 'country',           label: 'Country' },
+            { key: 'isPOBox',           label: 'Is PO Box' },
+            { key: 'isCanada',          label: 'Is Canada' },
+            { key: 'isMilitary',        label: 'Is military (APO/FPO)' },
+            { key: 'isOutlyingUS',      label: 'Is outlying US territory' },
+            { key: 'isForeign',         label: 'Is foreign' },
+            { key: 'isAKHI',            label: 'Is Alaska/Hawaii' },
+            { key: 'isVerified',        label: 'Is verified' },
+          ])
+        }
+        break
+      }
       case 'set_variable': {
         const assignments = data.assignments as { variable: string; value: string }[] | undefined
         for (const a of assignments ?? []) {

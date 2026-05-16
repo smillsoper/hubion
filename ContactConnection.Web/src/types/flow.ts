@@ -6,7 +6,7 @@ export interface FlowOption {
 export interface FlowNodeState {
   sessionId: string
   nodeId: string
-  nodeType: 'script' | 'input' | 'email' | 'phone' | 'branch' | 'set_variable' | 'api_call' | 'end'
+  nodeType: 'script' | 'input' | 'email' | 'phone' | 'address' | 'branch' | 'set_variable' | 'api_call' | 'end'
   label: string
   content?: string
   inputType?: 'text' | 'select' | 'checkbox'
@@ -22,6 +22,12 @@ export interface FlowNodeState {
   isTerminal: boolean
   lockedFields: string[]
   scriptContext?: string
+  // address node
+  allowInternational?: boolean
+  showMiddleInitial?: boolean
+  showCompany?: boolean
+  requiredFields?: string[]
+  fieldScripts?: Record<string, string>
 }
 
 export interface StartSessionRequest {

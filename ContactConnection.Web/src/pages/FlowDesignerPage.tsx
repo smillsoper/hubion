@@ -24,6 +24,7 @@ import ScriptNode from '../components/designer/nodes/ScriptNode'
 import InputNode from '../components/designer/nodes/InputNode'
 import EmailNode from '../components/designer/nodes/EmailNode'
 import PhoneNode from '../components/designer/nodes/PhoneNode'
+import AddressNode from '../components/designer/nodes/AddressNode'
 import BranchNode from '../components/designer/nodes/BranchNode'
 import SetVariableNode from '../components/designer/nodes/SetVariableNode'
 import ApiCallNode from '../components/designer/nodes/ApiCallNode'
@@ -37,6 +38,7 @@ const nodeTypes = {
   input: InputNode,
   email: EmailNode,
   phone: PhoneNode,
+  address: AddressNode,
   branch: BranchNode,
   set_variable: SetVariableNode,
   api_call: ApiCallNode,
@@ -382,6 +384,7 @@ function DesignerCanvas({
                 input: '#10b981',
                 email: '#0891b2',
                 phone: '#0d9488',
+                address: '#f97316',
                 branch: '#f59e0b',
                 set_variable: '#8b5cf6',
                 api_call: '#6366f1',

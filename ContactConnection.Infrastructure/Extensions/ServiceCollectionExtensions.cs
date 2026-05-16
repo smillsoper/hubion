@@ -88,6 +88,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INodeHandler, InputNodeHandler>();
         services.AddScoped<INodeHandler, EmailNodeHandler>();
         services.AddScoped<INodeHandler, PhoneNodeHandler>();
+        services.AddScoped<INodeHandler, AddressNodeHandler>();
         services.AddScoped<INodeHandler, BranchNodeHandler>();
         services.AddScoped<INodeHandler, SetVariableNodeHandler>();
         services.AddScoped<INodeHandler, ApiCallNodeHandler>();

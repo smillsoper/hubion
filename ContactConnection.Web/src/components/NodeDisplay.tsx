@@ -1,6 +1,46 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import type { FlowNodeState } from '../types/flow'
 
+// ── Address form constants ────────────────────────────────────────────────────
+
+const ADDR1_PREFIXES = ['', 'PO Box', 'PMB', 'RR', 'SR', 'Hwy']
+const ADDR2_PREFIXES = ['', 'Apt', 'Ste', 'Floor', 'Level', 'Space', 'Lot', 'Unit']
+
+const US_STATES: [string, string][] = [
+  ['', '— State —'],
+  ['AL', 'AL'], ['AK', 'AK'], ['AZ', 'AZ'], ['AR', 'AR'], ['CA', 'CA'],
+  ['CO', 'CO'], ['CT', 'CT'], ['DE', 'DE'], ['FL', 'FL'], ['GA', 'GA'],
+  ['HI', 'HI'], ['ID', 'ID'], ['IL', 'IL'], ['IN', 'IN'], ['IA', 'IA'],
+  ['KS', 'KS'], ['KY', 'KY'], ['LA', 'LA'], ['ME', 'ME'], ['MD', 'MD'],
+  ['MA', 'MA'], ['MI', 'MI'], ['MN', 'MN'], ['MS', 'MS'], ['MO', 'MO'],
+  ['MT', 'MT'], ['NE', 'NE'], ['NV', 'NV'], ['NH', 'NH'], ['NJ', 'NJ'],
+  ['NM', 'NM'], ['NY', 'NY'], ['NC', 'NC'], ['ND', 'ND'], ['OH', 'OH'],
+  ['OK', 'OK'], ['OR', 'OR'], ['PA', 'PA'], ['RI', 'RI'], ['SC', 'SC'],
+  ['SD', 'SD'], ['TN', 'TN'], ['TX', 'TX'], ['UT', 'UT'], ['VT', 'VT'],
+  ['VA', 'VA'], ['WA', 'WA'], ['WV', 'WV'], ['WI', 'WI'], ['WY', 'WY'],
+  ['DC', 'DC'],
+  ['PR', 'PR'], ['GU', 'GU'], ['VI', 'VI'], ['AS', 'AS'], ['MP', 'MP'],
+  ['AA', 'AA'], ['AE', 'AE'], ['AP', 'AP'],
+]
+
+interface AddrForm {
+  firstName: string; middleInitial: string; lastName: string
+  company: string
+  address1Prefix: string; address1: string
+  address2Prefix: string; address2: string
+  zip: string; zip4: string; city: string; state: string
+  country: string
+}
+
+const EMPTY_ADDR: AddrForm = {
+  firstName: '', middleInitial: '', lastName: '',
+  company: '',
+  address1Prefix: '', address1: '',
+  address2Prefix: '', address2: '',
+  zip: '', zip4: '', city: '', state: '',
+  country: '',
+}
+
 // ── WinForms-style input mask engine ──────────────────────────────────────
 // Mask chars: 0=digit  9=digit/space  L=letter  ?=letter/space  A=alphanum  &=any required  C=any optional
 // All other characters are literals and are auto-inserted.
@@ -65,6 +105,20 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
 
+  // Address form state
+  const [addrForm, setAddrForm] = useState<AddrForm>(EMPTY_ADDR)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
+
+  // Reset address form when navigating to a new node
+  const prevAddrNodeId = useRef<string | null>(null)
+  useEffect(() => {
+    if (node.nodeType === 'address' && node.nodeId !== prevAddrNodeId.current) {
+      prevAddrNodeId.current = node.nodeId
+      setAddrForm(EMPTY_ADDR)
+      setFocusedField(null)
+    }
+  }, [node.nodeId, node.nodeType])
+
   // Auto-focus the primary input whenever the displayed node changes
   const focusRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
@@ -120,6 +174,16 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
     setInputValue('')
   }
 
+  function handleAddressSubmit(e: FormEvent) {
+    e.preventDefault()
+    onAdvance(JSON.stringify(addrForm))
+  }
+
+  const activeFieldScript =
+    focusedField && node.fieldScripts?.[focusedField]?.trim()
+      ? node.fieldScripts[focusedField]
+      : null
+
   if (node.nodeType === 'end') {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
@@ -154,13 +218,13 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
         />
       )}
 
-      {/* Inline script (embedded on input/email nodes) */}
-      {node.nodeScriptLabel && (
+      {/* Inline script (input/email/phone nodes) — address manages its own script display */}
+      {node.nodeType !== 'address' && node.nodeScriptLabel && (
         <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
           {node.nodeScriptLabel}
         </p>
       )}
-      {node.nodeScriptContent && (
+      {node.nodeType !== 'address' && node.nodeScriptContent && (
         <div
           className="script-content bg-gray-900 rounded-xl p-5 text-gray-100 text-sm leading-relaxed border border-gray-800"
           dangerouslySetInnerHTML={{ __html: node.nodeScriptContent }}
@@ -292,6 +356,191 @@ export default function NodeDisplay({ node, onAdvance, advancing }: Props) {
             type="submit"
             disabled={advancing}
             className="self-start bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white rounded-lg px-5 py-2 text-sm font-medium transition-colors"
+          >
+            {advancing ? 'Validating…' : 'Next'}
+          </button>
+        </form>
+      )}
+
+      {/* Address node */}
+      {node.nodeType === 'address' && (
+        <form onSubmit={handleAddressSubmit} className="flex flex-col gap-3">
+          {/* Per-field or main script */}
+          {node.nodeScriptLabel && !activeFieldScript && (
+            <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
+              {node.nodeScriptLabel}
+            </p>
+          )}
+          {(activeFieldScript ?? node.nodeScriptContent) && (
+            <div
+              className="script-content bg-gray-900 rounded-xl p-5 text-gray-100 text-sm leading-relaxed border border-gray-800"
+              dangerouslySetInnerHTML={{ __html: (activeFieldScript ?? node.nodeScriptContent)! }}
+            />
+          )}
+
+          {/* Validation error */}
+          {node.validationError && (
+            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg px-3 py-2">
+              {node.validationError}
+            </p>
+          )}
+
+          {/* Name row */}
+          <div className="flex gap-2">
+            <input
+              ref={(el) => { focusRef.current = el }}
+              type="text"
+              value={addrForm.firstName}
+              onChange={(e) => setAddrForm((f) => ({ ...f, firstName: e.target.value }))}
+              onFocus={() => setFocusedField('firstName')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="First name"
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+            {node.showMiddleInitial && (
+              <input
+                type="text"
+                value={addrForm.middleInitial}
+                onChange={(e) => setAddrForm((f) => ({ ...f, middleInitial: e.target.value }))}
+                onFocus={() => setFocusedField('middleInitial')}
+                onBlur={() => setFocusedField(null)}
+                placeholder="MI"
+                maxLength={1}
+                className="w-12 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700 text-center"
+              />
+            )}
+            <input
+              type="text"
+              value={addrForm.lastName}
+              onChange={(e) => setAddrForm((f) => ({ ...f, lastName: e.target.value }))}
+              onFocus={() => setFocusedField('lastName')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="Last name"
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+          </div>
+
+          {/* Company */}
+          {node.showCompany && (
+            <input
+              type="text"
+              value={addrForm.company}
+              onChange={(e) => setAddrForm((f) => ({ ...f, company: e.target.value }))}
+              onFocus={() => setFocusedField('company')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="Company"
+              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+          )}
+
+          {/* Address line 1 */}
+          <div className="flex gap-2">
+            <select
+              value={addrForm.address1Prefix}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address1Prefix: e.target.value }))}
+              onFocus={() => setFocusedField('address1')}
+              onBlur={() => setFocusedField(null)}
+              className="bg-gray-800 text-white rounded-lg px-2 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            >
+              {ADDR1_PREFIXES.map((p) => (
+                <option key={p} value={p}>{p || '(none)'}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={addrForm.address1}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address1: e.target.value }))}
+              onFocus={() => setFocusedField('address1')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="Address line 1"
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+          </div>
+
+          {/* Address line 2 */}
+          <div className="flex gap-2">
+            <select
+              value={addrForm.address2Prefix}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address2Prefix: e.target.value }))}
+              onFocus={() => setFocusedField('address2')}
+              onBlur={() => setFocusedField(null)}
+              className="bg-gray-800 text-white rounded-lg px-2 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            >
+              {ADDR2_PREFIXES.map((p) => (
+                <option key={p} value={p}>{p || '(none)'}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={addrForm.address2}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address2: e.target.value }))}
+              onFocus={() => setFocusedField('address2')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="Address line 2 (optional)"
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+          </div>
+
+          {/* ZIP / City / State row */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={addrForm.zip}
+              onChange={(e) => setAddrForm((f) => ({ ...f, zip: e.target.value }))}
+              onFocus={() => setFocusedField('zip')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="ZIP"
+              className="w-20 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700 font-mono"
+            />
+            <input
+              type="text"
+              value={addrForm.zip4}
+              onChange={(e) => setAddrForm((f) => ({ ...f, zip4: e.target.value }))}
+              onFocus={() => setFocusedField('zip')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="+4"
+              maxLength={4}
+              className="w-14 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700 font-mono"
+            />
+            <input
+              type="text"
+              value={addrForm.city}
+              onChange={(e) => setAddrForm((f) => ({ ...f, city: e.target.value }))}
+              onFocus={() => setFocusedField('city')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="City"
+              className="flex-1 bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+            <select
+              value={addrForm.state}
+              onChange={(e) => setAddrForm((f) => ({ ...f, state: e.target.value }))}
+              onFocus={() => setFocusedField('state')}
+              onBlur={() => setFocusedField(null)}
+              className="w-20 bg-gray-800 text-white rounded-lg px-2 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            >
+              {US_STATES.map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Country — international only */}
+          {node.allowInternational && (
+            <input
+              type="text"
+              value={addrForm.country}
+              onChange={(e) => setAddrForm((f) => ({ ...f, country: e.target.value }))}
+              onFocus={() => setFocusedField('country')}
+              onBlur={() => setFocusedField(null)}
+              placeholder="Country (leave blank for US)"
+              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm input-focus-glow-orange border border-gray-700"
+            />
+          )}
+
+          <button
+            type="submit"
+            disabled={advancing}
+            className="self-start bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white rounded-lg px-5 py-2 text-sm font-medium transition-colors"
           >
             {advancing ? 'Validating…' : 'Next'}
           </button>

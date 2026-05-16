@@ -6,6 +6,7 @@ const NODE_TYPES: ContactConnectionNodeType[] = [
   'input',
   'email',
   'phone',
+  'address',
   'branch',
   'set_variable',
   'api_call',

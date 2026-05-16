@@ -3,6 +3,7 @@ export type ContactConnectionNodeType =
   | 'input'
   | 'email'
   | 'phone'
+  | 'address'
   | 'branch'
   | 'set_variable'
   | 'api_call'
@@ -32,6 +33,11 @@ export interface NodeData extends Record<string, unknown> {
   // phone
   allowInternational?: boolean
   dncCheck?: boolean
+  // address
+  showMiddleInitial?: boolean
+  showCompany?: boolean
+  requiredFields?: string[]
+  fieldScripts?: Record<string, string>
   // branch
   condition?: string
   // set_variable
@@ -67,6 +73,10 @@ export interface ContactConnectionNodeDef {
   checkDisposable?: boolean
   allowInternational?: boolean
   dncCheck?: boolean
+  showMiddleInitial?: boolean
+  showCompany?: boolean
+  requiredFields?: string[]
+  fieldScripts?: Record<string, string>
   condition?: string
   assignments?: { variable: string; value: string }[]
   method?: string
@@ -115,6 +125,12 @@ export const NODE_META: Record<
     description: 'Capture and validate a phone number',
     handles: 'single',
   },
+  address: {
+    label: 'Address',
+    color: '#f97316',
+    description: 'Capture and validate a mailing address',
+    handles: 'single',
+  },
   branch: {
     label: 'Branch',
     color: '#f59e0b',
@@ -151,6 +167,8 @@ export function defaultNodeData(type: ContactConnectionNodeType): NodeData {
       return { label: 'Email', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, checkARecord: false, checkMX: true, checkDisposable: true }
     case 'phone':
       return { label: 'Phone Number', scriptLabel: '', scriptContent: '', outputVariable: '', required: false, allowInternational: false, dncCheck: false }
+    case 'address':
+      return { label: 'Address', scriptLabel: '', scriptContent: '', outputVariable: '', allowInternational: false, showMiddleInitial: false, showCompany: false, requiredFields: ['firstName', 'lastName', 'address1', 'zip', 'city', 'state'], fieldScripts: {} }
     case 'branch':
       return { label: 'New Branch', condition: '' }
     case 'set_variable':

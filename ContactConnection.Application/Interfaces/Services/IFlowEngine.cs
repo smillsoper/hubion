@@ -108,6 +108,23 @@ public class FlowNodeState
     /// Null = no mask. When set, MinChars/MaxChars are implied by the mask and should be ignored.
     /// </summary>
     public string? InputMask { get; set; }
+
+    // ── Address node ───────────────────────────────────────────────────────
+
+    /// <summary>When true the Country field is shown and international postal formats are accepted.</summary>
+    public bool AllowInternational { get; set; }
+
+    /// <summary>When true the Middle Initial field is shown in the address form.</summary>
+    public bool ShowMiddleInitial { get; set; }
+
+    /// <summary>When true the Company Name field is shown in the address form.</summary>
+    public bool ShowCompany { get; set; }
+
+    /// <summary>Field names that are required (e.g. "firstName", "lastName", "address1", "zip", "city", "state").</summary>
+    public List<string> RequiredFields { get; set; } = [];
+
+    /// <summary>Per-field resolved script HTML, keyed by field name (e.g. "zip", "firstName"). Displayed when that field has focus.</summary>
+    public Dictionary<string, string> FieldScripts { get; set; } = [];
 }
 
 public class FlowOption

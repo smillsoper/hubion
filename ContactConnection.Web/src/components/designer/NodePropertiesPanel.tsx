@@ -47,6 +47,9 @@ export default function NodePropertiesPanel({
   // Variable panel toggle for set_variable node
   const [varPanelOpen, setVarPanelOpen] = useState(false)
 
+  // Address node — active script tab ('main' | field key)
+  const [addrScriptTab, setAddrScriptTab] = useState('main')
+
   // Track the last-focused assignment field so clicking a variable inserts there
   const lastFocused = useRef<{ index: number; side: 'variable' | 'value'; el: HTMLInputElement } | null>(null)
 
@@ -390,6 +393,178 @@ export default function NodePropertiesPanel({
             </p>
           </>
         )
+
+      case 'address': {
+        const reqFields    = (data.requiredFields as string[]) ?? []
+        const fieldScripts = (data.fieldScripts  as Record<string, string>) ?? {}
+
+        const ADDR_TABS = [
+          { key: 'main',          label: 'Main' },
+          { key: 'firstName',     label: 'First Name' },
+          { key: 'lastName',      label: 'Last Name' },
+          { key: 'middleInitial', label: 'MI' },
+          { key: 'company',       label: 'Company' },
+          { key: 'address1',      label: 'Addr 1' },
+          { key: 'address2',      label: 'Addr 2' },
+          { key: 'zip',           label: 'ZIP' },
+          { key: 'city',          label: 'City' },
+          { key: 'state',         label: 'State' },
+          { key: 'country',       label: 'Country' },
+        ]
+
+        const REQ_OPTS = [
+          { key: 'firstName',     label: 'First Name' },
+          { key: 'lastName',      label: 'Last Name' },
+          { key: 'middleInitial', label: 'Middle Initial' },
+          { key: 'company',       label: 'Company' },
+          { key: 'address1',      label: 'Address Line 1' },
+          { key: 'address2',      label: 'Address Line 2' },
+          { key: 'zip',           label: 'ZIP' },
+          { key: 'zip4',          label: 'ZIP+4' },
+          { key: 'city',          label: 'City' },
+          { key: 'state',         label: 'State' },
+          { key: 'country',       label: 'Country' },
+        ]
+
+        function toggleReqField(key: string, checked: boolean) {
+          const next = checked
+            ? [...reqFields, key]
+            : reqFields.filter((f) => f !== key)
+          onUpdate(node.id, { requiredFields: next })
+        }
+
+        return (
+          <>
+            {/* Script tabs */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-400">Scripts</label>
+
+              {/* Tab strip */}
+              <div className="flex flex-wrap gap-1">
+                {ADDR_TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setAddrScriptTab(t.key)}
+                    className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                      addrScriptTab === t.key
+                        ? 'bg-orange-700/60 text-orange-200 border border-orange-600/50'
+                        : 'text-gray-400 hover:text-gray-200 border border-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Main tab: label + content */}
+              {addrScriptTab === 'main' && (
+                <div className="flex flex-col gap-2 mt-1">
+                  <input
+                    className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
+                    value={(data.scriptLabel as string) ?? ''}
+                    placeholder="Script label (optional)"
+                    onChange={(e) => onUpdate(node.id, { scriptLabel: e.target.value })}
+                  />
+                  <ScriptContentEditor
+                    key={`${node.id}-addr-main`}
+                    content={(data.scriptContent as string) ?? ''}
+                    onUpdate={(html) => onUpdate(node.id, { scriptContent: html })}
+                    dark
+                    {...scriptCtx}
+                  />
+                </div>
+              )}
+
+              {/* Per-field tab: just script content */}
+              {addrScriptTab !== 'main' && (
+                <div className="mt-1">
+                  <ScriptContentEditor
+                    key={`${node.id}-addr-${addrScriptTab}`}
+                    content={fieldScripts[addrScriptTab] ?? ''}
+                    onUpdate={(html) => onUpdate(node.id, {
+                      fieldScripts: { ...fieldScripts, [addrScriptTab]: html },
+                    })}
+                    dark
+                    {...scriptCtx}
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug">
+                    Shown when the agent focuses this field. Leave empty to keep the main script visible.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-800 -mx-4 my-1" />
+
+            {/* Output variable */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-gray-400">Output variable</label>
+              <input
+                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-sky-500"
+                value={(data.outputVariable as string) ?? ''}
+                placeholder="billing_address"
+                onChange={(e) => onUpdate(node.id, { outputVariable: e.target.value })}
+              />
+              <p className="text-[10px] text-gray-500 leading-snug">
+                {(data.outputVariable as string)
+                  ? <>Object — access as <span className="font-mono text-orange-400">{'{{flow.' + (data.outputVariable as string) + '.city}}'}</span></>
+                  : 'Stores address object as a flow variable'}
+              </p>
+            </div>
+
+            {/* Field visibility */}
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-gray-400">Optional fields</p>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.showMiddleInitial as boolean) ?? false}
+                  onChange={(e) => onUpdate(node.id, { showMiddleInitial: e.target.checked })}
+                />
+                Show Middle Initial
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.showCompany as boolean) ?? false}
+                  onChange={(e) => onUpdate(node.id, { showCompany: e.target.checked })}
+                />
+                Show Company
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(data.allowInternational as boolean) ?? false}
+                  onChange={(e) => onUpdate(node.id, { allowInternational: e.target.checked })}
+                />
+                Allow International
+              </label>
+            </div>
+
+            {/* Required fields */}
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-gray-400">Required fields</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {REQ_OPTS.map((opt) => (
+                  <label key={opt.key} className="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reqFields.includes(opt.key)}
+                      onChange={(e) => toggleReqField(opt.key, e.target.checked)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[10px] text-gray-600 leading-snug">
+              Address 1 prefix: PO Box, PMB, RR, SR, Hwy · Address 2 prefix: Apt, Ste, Floor, Level, Space, Lot, Unit
+            </p>
+          </>
+        )
+      }
 
       case 'branch':
         return (
